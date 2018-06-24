@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 import pygame
+import numpy as np
 
 
 colors = {
@@ -60,21 +62,28 @@ def AAfilledRoundedRect(surface, rect, color, radius=0.2):
 
 class Board:
     def __init__(self, size_x=10, size_y=10):
-        self.cell = [[0 for _ in range(size_x)] for _ in range(size_y)]
+        self.cells = np.zeros((size_y, size_y))
 
     def set(self, pos, figure, color=1):
         width, height = len(figure[0]), len(figure)
         x_pos, y_pos = pos[0], pos[1]
         for y in range(y_pos, y_pos + height):
             for x in range(x_pos, x_pos + width):
-                self.cell[y][x] = color * figure[y - y_pos][x - x_pos]
+                self.cells[y][x] = color * figure[y - y_pos][x - x_pos]
 
     def draw(self, display):
-        for j, row in enumerate(self.cell):
+        for j, row in enumerate(self.cells):
             for i, item in enumerate(row):
                 rect = (shift_pos[0] + i * TILE_SIZE + 8, shift_pos[1] + j * TILE_SIZE + 8, TILE_SHIFT, TILE_SHIFT)
                 AAfilledRoundedRect(display, rect, colors[item])
 
+    def get_lines(self):
+        for row in self.cells:
+            if np.all(row > 0):
+                yield row
+        for col in self.cells.T:
+            if np.all(row > 0):
+                yield row
 
 board = Board()
 board.set((1, 1), figures[0], color=9)
