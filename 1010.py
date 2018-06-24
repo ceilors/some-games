@@ -80,7 +80,7 @@ class Board:
         x_pos, y_pos = pos[0], pos[1]
         for y in range(y_pos, y_pos + height):
             for x in range(x_pos, x_pos + width):
-                if self.cells[y, x] != 0:
+                if self.cells[y, x] * figure[x - x_pos, y - y_pos] != 0:
                     return False
         return True
 
