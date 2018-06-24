@@ -30,7 +30,7 @@ LEFT_MOUSE = 1
 RIGHT_MOUSE = 3
 
 # координаты с корзинам с фигурами
-basket_pos = [[x, game_height - game_height // 3] for x in np.arange(0, game_width, game_width / 3)]
+basket_pos = [[x, game_height - TILE_SIZE * 5] for x in np.arange(0, game_width, game_width / 3)]
 
 
 def AAfilledRoundedRect(surface, rect, color, radius=0.2):
@@ -66,6 +66,8 @@ def AAfilledRoundedRect(surface, rect, color, radius=0.2):
 
 class Board:
     def __init__(self, size_x=10, size_y=10):
+        self.width = size_x
+        self.height = size_y
         self.cells = np.zeros((size_y, size_y))
 
     def set(self, pos, figure, color=1):
@@ -78,6 +80,10 @@ class Board:
     def can_set(self, pos, figure):
         width, height = len(figure), len(figure[0])
         x_pos, y_pos = pos[0], pos[1]
+        pole_cond = x_pos >= 0 and x_pos + width <= self.width and\
+            y_pos >= 0 and y_pos + height <= self.height
+        if not pole_cond:
+            return False
         for y in range(y_pos, y_pos + height):
             for x in range(x_pos, x_pos + width):
                 if self.cells[y, x] * figure[x - x_pos, y - y_pos] != 0:
@@ -119,6 +125,7 @@ class App:
 
     def on_init(self):
         pygame.init()
+        pygame.display.set_caption('1010')
         self._display_surf = pygame.display.set_mode((self.width, self.height), pygame.HWSURFACE)
         self._running = True
 
