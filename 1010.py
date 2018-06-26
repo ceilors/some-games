@@ -224,6 +224,8 @@ class App:
                     self.figure_drag = True
                 if self.game_over:
                     board.clear()
+                    self.basket_figures = np.random.choice(figures, size=3)
+                    self.basket_colors = np.random.randint(1, len(colors), size=3)
                     self.game_highscore = max(self.game_score, self.game_highscore)
                     self.game_over = False
                     self.game_score = 0
@@ -256,11 +258,6 @@ class App:
 
     def on_loop(self):
         if not self.remove_animation:
-            # помещение блоков для анимации
-            items = board.get_lines()
-            if len(items) > 0:
-                self.lines = items
-                self.remove_animation = True
             if not self.game_over:
                 # проверка игры на проигрыш
                 figure_cant_set = True
@@ -275,6 +272,11 @@ class App:
                             break
                 if figure_cant_set:
                     self.game_over = True
+            # помещение блоков для анимации
+            items = board.get_lines()
+            if len(items) > 0:
+                self.lines = items
+                self.remove_animation = True
         else:
             # реализация анимации удаления заполенной полосы
             if self.remove_countdown == 0:
