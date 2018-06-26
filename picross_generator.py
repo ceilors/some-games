@@ -38,7 +38,7 @@ def get_color(palette, index):
 if __name__ == '__main__':
     BLOCK_SIZE = 32
 
-    img = Image.open('mario.png')
+    img = Image.open('resources/mario.png')
 
     palette = bytearray(img.palette.palette)
     
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         draw.line((horizontal_blocks * BLOCK_SIZE, y, nimage_width, y), 'black')
 
     # растановляем цифры
-    font = ImageFont.truetype('FiraMono-Regular.ttf', size=BLOCK_SIZE - 10)
+    font = ImageFont.truetype('resources/FiraMono-Regular.ttf', size=BLOCK_SIZE - 10)
     for xindex, line in enumerate(vertical_data):
         ypos = (vertical_blocks - len(line) + 0.1) * BLOCK_SIZE
         xpos = BLOCK_SIZE * (horizontal_blocks + 0.3 + xindex)
@@ -95,4 +95,4 @@ if __name__ == '__main__':
             draw.text((xpos, ypos), str(number), font=font, fill=get_color(palette, color))
             xpos += BLOCK_SIZE
 
-    nimage.save('mario-picross.png')
+    nimage.save('resources/mario-picross.png')

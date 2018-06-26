@@ -8,7 +8,7 @@ tile_size = 32
 game_clock = 30
 quit_flag = False
 game_over_flag = False
-text_shift = (10, 6)
+text_shift = (10, 3)
 mines_count = 20
 window_size = (pole_size[0] * tile_size, pole_size[1] * tile_size)
 
@@ -79,10 +79,10 @@ if __name__ == '__main__':
     pygame.display.set_caption('Minesweeper')
     clock = pygame.time.Clock()
 
-    font = pygame.font.Font(None, 32)
+    font = pygame.font.Font('resources/FiraMono-Regular.ttf', 22)
     surface = pygame.Surface(window_size)
     surface.fill(background_color)
-    image = pygame.image.load('minesweeper.png')
+    image = pygame.image.load('resources/minesweeper.png')
 
     while not quit_flag:
         surface.fill(background_color)

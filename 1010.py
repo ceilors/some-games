@@ -189,7 +189,7 @@ class App:
         pygame.init()
         pygame.display.set_caption('1010')
         self._display_surf = pygame.display.set_mode((self.width, self.height), pygame.HWSURFACE)
-        self.font = pygame.font.Font(None, 36)
+        self.font = pygame.font.Font('resources/FiraMono-Regular.ttf', 20)
         self._running = True
 
     def on_event(self, event):
