@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from itertools import product
-from copy import copy
 import numpy as np
 import pygame
 
@@ -50,6 +49,13 @@ RIGHT_MOUSE = 3
 basket_pos = [[x + shift_pos[0], TILE_SIZE * 11 + shift_pos[1]] for x in np.arange(0, 3 * 5 * TILE_SIZE, TILE_SIZE * 6)]
 
 
+def remove_zeros(arr):
+    # находим строки и столбцы полностью пустые
+    empty_cols, empty_rows = arr.sum(axis=0), arr.sum(axis=1)
+    # и убираем их из текущей фигуры
+    return arr[empty_rows != False, :][:, empty_cols != False]
+
+
 def rotate(figure):
     # помещаем фигуру в квадрат side_size x side_size
     side_size = max(figure.shape)
@@ -61,10 +67,7 @@ def rotate(figure):
     for i in range(side_size):
         for j in range(side_size):
             nf[side_size - i - 1][j] = figure[j][i]
-    # находим строки и столбцы полностью пустые
-    empty_cols, empty_rows = nf.sum(axis=0), nf.sum(axis=1)
-    # и убираем их из текущей фигуры
-    return nf[empty_rows != False, :][:, empty_cols != False]
+    return remove_zeros(nf)
 
 
 def prepare_figures(figures):
@@ -73,11 +76,11 @@ def prepare_figures(figures):
     for figure in figures[3:][:4]:
         r_figure = rotate(figure)
         # INFO: не убирать .T (нужно для корректного отображения фигур)
-        result += [figure.T, r_figure.T]
+        result += [remove_zeros(figure.T), r_figure.T]
     # генерируем угловые фигуры (4 варианта)
     for figure in figures[-3:]:
         # INFO: не убирать .T (нужно для корректного отображения фигур)
-        result.append(figure.T)
+        result.append(remove_zeros(figure.T))
         for _ in range(3):
             figure = rotate(figure)
             result.append(figure.T)
