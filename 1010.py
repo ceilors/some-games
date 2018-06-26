@@ -261,7 +261,7 @@ class App:
 
     def on_loop(self):
         if not self.remove_animation:
-            if not self.game_over:
+            if not self.game_over and self.remove_countdown == 0:
                 # проверка игры на проигрыш
                 figure_cant_set = True
                 for figure in self.basket_figures:
