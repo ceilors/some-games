@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import pygame
 import numpy as np
+import pygame
 
 colors = {
     0: (200, 200, 200),
@@ -19,16 +19,16 @@ game_width = 500
 game_height = 500
 
 figures = [
-    # all boxes
+    # коробки всех размеров
     np.array([[True] * 3, [True] * 3, [True] * 3]).T,
     np.array([[True, True], [True, True]]).T,
     np.array([[True]]).T,
-    # all lines
+    # прямые линии
     np.array([[True] * 5]),
     np.array([[True] * 4]),
     np.array([[True] * 3]),
     np.array([[True] * 2]),
-    # others
+    # остальные фигуры
     np.array([[True, False, False], [True, False, False], [True, True, True]]),
     np.array([[True, False, False], [True, False, False], [True, True, False]]),
     np.array([[True, False], [True, True]]),
@@ -46,9 +46,9 @@ RIGHT_MOUSE = 3
 basket_pos = [[x, game_height - TILE_SIZE * 5] for x in np.arange(0, game_width, game_width / 3)]
 
 
-def rotate(figure, right=True):
+def rotate(figure):
     side_size = figure.shape[0]
-    # создаём новый массив повёрнутый на 90 градусов (влево или вправо)
+    # создаём новый массив повёрнутый на 90 градусов
     nf = np.empty(figure.shape, dtype=np.bool)
     for i in range(side_size):
         for j in range(side_size):
@@ -61,14 +61,14 @@ def rotate(figure, right=True):
 
 def prepare_figures(figures):
     result = []
-    # rotate lines
+    # генерируем все положения для линейных фигур (2 варианта)
     for figure in figures[3:][:4]:
         r_figure = rotate(figure)
-        # INFO: don't remove .T (for correct placement)
+        # INFO: не убирать .T (нужно для корректного отображения фигур)
         result += [figure.T, r_figure.T]
-    # rotate last figures
+    # генерируем угловые фигуры (4 варианта)
     for figure in figures[-3:]:
-        # INFO: don't remove .T (for correct placement)
+        # INFO: не убирать .T (нужно для корректного отображения фигур)
         result.append(figure.T)
         for _ in range(3):
             figure = rotate(figure)
@@ -136,6 +136,7 @@ class Board:
     def can_set(self, pos, figure):
         width, height = len(figure), len(figure[0])
         x_pos, y_pos = pos[0], pos[1]
+        # проверка на выход из границ игрового поля
         pole_cond = x_pos >= 0 and x_pos + width <= self.width and\
             y_pos >= 0 and y_pos + height <= self.height
         if not pole_cond:
@@ -168,7 +169,8 @@ figures = prepare_figures(figures)
 
 
 class App:
-    MAX_COUNDOWN = 5
+    MAX_COUNTDOWN = 1
+    GAME_FPS = 60
 
     def __init__(self, width=game_width, height=game_height):
         self.figure_drag = False
@@ -181,9 +183,10 @@ class App:
         self._running = True
         self._display_surf = None
         self.remove_animation = False
-        self.remove_countdown = App.MAX_COUNDOWN
+        self.remove_countdown = App.MAX_COUNTDOWN
         self.game_score = 0
         self.lines = None
+        self.clock = pygame.time.Clock()
 
     def on_init(self):
         pygame.init()
@@ -209,19 +212,23 @@ class App:
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == LEFT_MOUSE:
                 x, y = pygame.mouse.get_pos()
+                # проверка на вхождения xy в границы игрового поля
                 figure_in = x > shift_pos[0] and x < (shift_pos[0] + TILE_SIZE * board.width) and\
                     y > shift_pos[1] and y < (shift_pos[1] + TILE_SIZE * board.height)
                 if figure_in:
                     index_x = int(np.ceil((x - shift_pos[0] + 8) / TILE_SIZE) - 1)
                     index_y = int(np.ceil((y - shift_pos[1] + 8) / TILE_SIZE) - 1)
+                    # можно ли установить фигуру на поле
                     if board.can_set((index_x, index_y), self.basket_figures[self.figure_index]):
                         self.game_score += self.basket_figures[self.figure_index].sum()
                         board.set(
                             (index_x, index_y),
                             self.basket_figures[self.figure_index],
                             color=self.basket_colors[self.figure_index])
+                        # удаляем фигуру из ячейки корзины
                         self.basket_figures[self.figure_index] = np.array([[]])
                         self.basket_count += 1
+                        # генерируем новые фигуры, если корзина пуста
                         if self.basket_count == 3:
                             self.basket_figures = np.random.choice(figures, size=3)
                             self.basket_colors = np.random.randint(1, 9 + 1, size=3)
@@ -230,7 +237,7 @@ class App:
                 self.figure_index = -1
 
     def on_loop(self):
-        # remove animation
+        # реализация анимации удаления заполенной полосы
         if not self.remove_animation:
             items = board.get_lines()
             if len(items) > 0:
@@ -247,13 +254,16 @@ class App:
                 if all_clear:
                     self.remove_animation = False
                     self.lines = None
-                self.remove_countdown = App.MAX_COUNDOWN
+                self.remove_countdown = App.MAX_COUNTDOWN
             else:
                 self.remove_countdown -= 1
 
     def on_render(self):
+        # рисование подложки
         pygame.draw.rect(self._display_surf, (100, 100, 100), (0, 0, self.width, self.height))
+        # рисование основого игрового поля
         board.draw(self._display_surf)
+        # рисование корзины с фигурами
         for index, (x, y) in enumerate(basket_pos):
             if index == self.figure_index:
                 x, y = pygame.mouse.get_pos()
@@ -264,6 +274,7 @@ class App:
                     if item > 0:
                         rect = (x + i * TILE_SIZE + 8, y + j * TILE_SIZE + 8, TILE_SHIFT, TILE_SHIFT)
                         AAfilledRoundedRect(self._display_surf, rect, colors[self.basket_colors[index]])
+        # вывод игровых очков
         text_pos = (TILE_SIZE * (board.width + 1), 10)
         text_color = (200, 200, 200)
         draw_text(self._display_surf, self.font, text_color, text_pos, 30, f'game score\n{self.game_score}')
@@ -280,6 +291,7 @@ class App:
                 self.on_event(event)
             self.on_loop()
             self.on_render()
+            self.clock.tick(App.GAME_FPS)
         self.on_cleanup()
 
 
