@@ -1,29 +1,31 @@
 #!/usr/bin/env python3
+from itertools import product
+from copy import copy
 import numpy as np
 import pygame
 
 colors = {
-    0: (200, 200, 200),
-    1: (255, 206, 55),
-    2: (232, 155, 50),
-    3: (255, 129, 68),
-    4: (232, 69, 56),
-    5: (255, 100, 190),
-    6: (190, 88, 255),
-    7: (104, 101, 232),
-    8: (101, 186, 255),
-    9: (62, 232, 210),
+    0: (150, 150, 150),
+    1: (255, 127, 127),
+    2: (255, 212, 127),
+    3: (212, 255, 127),
+    4: (127, 255, 127),
+    5: (127, 255, 212),
+    6: (127, 212, 255),
+    7: (127, 127, 255),
+    8: (212, 127, 255),
+    9: (255, 127, 212)
 }
 
-game_width = 500
-game_height = 500
+game_width = 574
+game_height = 542
 
 figures = [
     # коробки всех размеров
     np.array([[True] * 3, [True] * 3, [True] * 3]).T,
     np.array([[True, True], [True, True]]).T,
     np.array([[True]]).T,
-    # прямые линии
+    # # прямые линии
     np.array([[True] * 5]),
     np.array([[True] * 4]),
     np.array([[True] * 3]),
@@ -37,17 +39,23 @@ figures = [
 shift_pos = (10, 10)
 TILE_SIZE = 32
 TILE_SHIFT = 28
+MAX_TILES = 5
+MAX_BASKET_SIZE = 3
 
 # mouse pressed key
 LEFT_MOUSE = 1
 RIGHT_MOUSE = 3
 
 # координаты с корзинам с фигурами
-basket_pos = [[x, game_height - TILE_SIZE * 5] for x in np.arange(0, game_width, game_width / 3)]
+basket_pos = [[x + shift_pos[0], TILE_SIZE * 11 + shift_pos[1]] for x in np.arange(0, 3 * 5 * TILE_SIZE, TILE_SIZE * 6)]
 
 
 def rotate(figure):
-    side_size = figure.shape[0]
+    # помещаем фигуру в квадрат side_size x side_size
+    side_size = max(figure.shape)
+    zeros = np.zeros((side_size, side_size), dtype=np.bool)
+    zeros[:figure.shape[0], :figure.shape[1]] = figure
+    figure = zeros
     # создаём новый массив повёрнутый на 90 градусов
     nf = np.empty(figure.shape, dtype=np.bool)
     for i in range(side_size):
@@ -125,6 +133,9 @@ class Board:
         self.height = size_y
         self.cells = np.zeros((size_y, size_y))
 
+    def clear(self):
+        self.cells = np.zeros((self.width, self.height))
+
     def set(self, pos, figure, color=1):
         width, height = len(figure), len(figure[0])
         x_pos, y_pos = pos[0], pos[1]
@@ -177,7 +188,7 @@ class App:
         self.figure_index = -1
         self.basket_count = 0
         self.basket_figures = np.random.choice(figures, size=3)
-        self.basket_colors = np.random.randint(1, 9 + 1, size=3)
+        self.basket_colors = np.random.randint(1, len(colors), size=3)
         self.width = width
         self.height = height
         self._running = True
@@ -185,8 +196,10 @@ class App:
         self.remove_animation = False
         self.remove_countdown = App.MAX_COUNTDOWN
         self.game_score = 0
+        self.game_highscore = 0
         self.lines = None
         self.clock = pygame.time.Clock()
+        self.game_over = False
 
     def on_init(self):
         pygame.init()
@@ -209,6 +222,11 @@ class App:
                 if not self.figure_drag and y >= basket_pos[0][1]:
                     self.figure_index = x // (game_width // 3)
                     self.figure_drag = True
+                if self.game_over:
+                    board.clear()
+                    self.game_highscore = max(self.game_score, self.game_highscore)
+                    self.game_over = False
+                    self.game_score = 0
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == LEFT_MOUSE:
                 x, y = pygame.mouse.get_pos()
@@ -220,7 +238,7 @@ class App:
                     index_y = int(np.ceil((y - shift_pos[1] + 8) / TILE_SIZE) - 1)
                     # можно ли установить фигуру на поле
                     if board.can_set((index_x, index_y), self.basket_figures[self.figure_index]):
-                        self.game_score += self.basket_figures[self.figure_index].sum()
+                        self.game_score += int(self.basket_figures[self.figure_index].sum())
                         board.set(
                             (index_x, index_y),
                             self.basket_figures[self.figure_index],
@@ -231,19 +249,34 @@ class App:
                         # генерируем новые фигуры, если корзина пуста
                         if self.basket_count == 3:
                             self.basket_figures = np.random.choice(figures, size=3)
-                            self.basket_colors = np.random.randint(1, 9 + 1, size=3)
+                            self.basket_colors = np.random.randint(1, len(colors), size=3)
                             self.basket_count = 0
                 self.figure_drag = False
                 self.figure_index = -1
 
     def on_loop(self):
-        # реализация анимации удаления заполенной полосы
         if not self.remove_animation:
+            # помещение блоков для анимации
             items = board.get_lines()
             if len(items) > 0:
                 self.lines = items
                 self.remove_animation = True
+            if not self.game_over:
+                # проверка игры на проигрыш
+                figure_cant_set = True
+                for figure in self.basket_figures:
+                    if not figure_cant_set:
+                        break
+                    if figure.sum() == 0:
+                        continue
+                    for x, y in product(range(board.width), range(board.height)):
+                        if board.can_set((x, y), figure):
+                            figure_cant_set = False
+                            break
+                if figure_cant_set:
+                    self.game_over = True
         else:
+            # реализация анимации удаления заполенной полосы
             if self.remove_countdown == 0:
                 all_clear = True
                 for item in self.lines:
@@ -263,7 +296,14 @@ class App:
         pygame.draw.rect(self._display_surf, (100, 100, 100), (0, 0, self.width, self.height))
         # рисование основого игрового поля
         board.draw(self._display_surf)
-        # рисование корзины с фигурами
+        # рисование подложки для фигур
+        for k in range(MAX_BASKET_SIZE):
+            for j in range(MAX_TILES):
+                for i in range(MAX_TILES):
+                    rect = (shift_pos[0] + k * TILE_SIZE * (MAX_TILES + 1) + i * TILE_SIZE + 8,
+                            shift_pos[1] + (board.height + 1) * TILE_SIZE + j * TILE_SIZE + 8, TILE_SHIFT, TILE_SHIFT)
+                    AAfilledRoundedRect(self._display_surf, rect, (120, 120, 120))
+        # рисование фигура в корзинах
         for index, (x, y) in enumerate(basket_pos):
             if index == self.figure_index:
                 x, y = pygame.mouse.get_pos()
@@ -275,9 +315,12 @@ class App:
                         rect = (x + i * TILE_SIZE + 8, y + j * TILE_SIZE + 8, TILE_SHIFT, TILE_SHIFT)
                         AAfilledRoundedRect(self._display_surf, rect, colors[self.basket_colors[index]])
         # вывод игровых очков
-        text_pos = (TILE_SIZE * (board.width + 1), 10)
+        text_pos = (TILE_SIZE * (board.width + 1), shift_pos[1])
         text_color = (200, 200, 200)
-        draw_text(self._display_surf, self.font, text_color, text_pos, 30, f'game score\n{self.game_score}')
+        render_text = f'highscore\n{self.game_highscore}\nscore\n{self.game_score}'
+        if self.game_over:
+            render_text += '\n\nGAME OVER'
+        draw_text(self._display_surf, self.font, text_color, text_pos, 30, render_text)
         pygame.display.flip()
 
     def on_cleanup(self):
