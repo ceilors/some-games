@@ -8,13 +8,17 @@ def by_two(arr):
         yield arr[index], arr[index + 1]
 
 
-def split_and_count(arr, indexes, ignore_zeros=True):
+def split_and_count(arr, indexes, one_color=False):
     results = []
     indexes = [0] + indexes + [len(arr)]
     for a, b in by_two(indexes):
         block = arr[a:b]
-        if not (ignore_zeros and block[0] == 0):
-            results.append((block[0], len(block)))
+        if one_color:
+            if block[0] == 0:
+                results.append((block[0], len(block)))
+        else:
+            if block[0] > 0:
+                results.append((block[0], len(block)))
     return results
 
 
@@ -26,11 +30,11 @@ def split_indexes(arr):
     return indexes
 
 
-def get_tuples(arr):
+def get_tuples(arr, one_color=False):
     data = []
     for line in arr:
         indexes = split_indexes(line)
-        data.append(split_and_count(line, indexes))
+        data.append(split_and_count(line, indexes, one_color=one_color))
     return data
 
 
@@ -41,17 +45,63 @@ def get_color(palette, index):
     return (r, g, b)
 
 
-def generate_picross(input_image, output_image, block_size=32, render_font='resources/FiraMono-Regular.ttf'):
-    # читаем картинку и преобразуем цвета в палитру
-    img = Image.open(input_image).convert('P')
+def find_neigh(img, x, y):
+    coords = [
+        (-1, 0), (1, 0), (0, -1), (0, 1),
+        (-1, -1), (1, -1), (-1, 1), (1, 1)
+    ]
+    neigh_lst = []
+    for px, py in coords:
+        ignore_this = px + x < 0 or px + x > img.shape[1] - 1 or \
+            py + y < 0 or py + y > img.shape[0] - 1
+        if ignore_this:
+            continue
+        neigh_lst.append((x + px, y + py))
+    return neigh_lst
+
+
+def get2color(filename):
+    oimg = Image.open(filename)
+    gimg = np.array(oimg.convert('L'))
+    img = np.array(oimg)
+    zmg = np.zeros((img.shape[0] + 2, img.shape[1] + 2))
+    zmg[1:-1, 1:-1] = img[:,:]
+    img = zmg
+    nimg = np.zeros(img.shape, dtype='uint8')
+    for yndex, line in enumerate(img):
+        for xndex, item in enumerate(line):
+            if item == 0:
+                nimg[yndex, xndex] = 1
+                continue
+            neigh = find_neigh(img, xndex, yndex)
+            colors = np.array(list(map(lambda x: img[x[1], x[0]], neigh)))
+            if 0 not in colors:
+                nimg[yndex, xndex] = 1
+    gimg[gimg < 127] = 0
+    gimg[gimg > 127] = 1
+    nimg = 1 - nimg
+    gimg += nimg[1:-1, 1:-1]
+    gimg[gimg > 0] = 1
+    gimg = 1 - gimg
+    gimg[gimg == 1] = 255
+    return Image.fromarray(gimg).convert('P')
+
+
+def generate_picross(input_image, output_image, block_size=32, render_font='resources/FiraMono-Regular.ttf', use_black=False):
+    if use_black:
+        # делаем из цветной картинки двухцветную
+        img = get2color(input_image)
+    else:
+        # читаем картинку и преобразуем цвета в палитру
+        img = Image.open(input_image).convert('P')
 
     # получаем все цвета палитры
     palette = bytearray(img.palette.palette)
 
     # получаем последовательности цветов на картинке
     arr = np.array(img)
-    horizontal_data = get_tuples(arr)
-    vertical_data = get_tuples(arr.T)
+    horizontal_data = get_tuples(arr, one_color=use_black)
+    vertical_data = get_tuples(arr.T, one_color=use_black)
 
     # находим самый длинный блок
     horizontal_blocks = 0
@@ -105,4 +155,4 @@ def generate_picross(input_image, output_image, block_size=32, render_font='reso
 
 
 if __name__ == '__main__':
-    generate_picross('resources/mario.png', 'resources/mario-picross.png')
+    generate_picross('resources/mario.png', 'resources/mario-picross.png', use_black=True)
