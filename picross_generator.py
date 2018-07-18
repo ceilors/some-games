@@ -115,7 +115,7 @@ def generate_picross(input_image, output_image, block_size=32, render_font='reso
     nimage_width = block_size * img.size[0] + horizontal_blocks * block_size
     nimage_height = block_size * img.size[1] + vertical_blocks * block_size
 
-    nimage = Image.new('RGBA', (nimage_width + 1, nimage_height + 1), 'white')
+    nimage = Image.new('RGBA', (nimage_width + 1, nimage_height + 1), (0, 0, 0, 0))
     draw = ImageDraw.Draw(nimage)
 
     # ресайзим старую картинку
