@@ -142,13 +142,19 @@ def generate_picross(input_image, output_image, block_size=32, render_font='reso
         ypos = (vertical_blocks - len(line) + 0.1) * block_size
         xpos = block_size * (horizontal_blocks + 0.3 + xindex)
         for color, number in line:
-            draw.text((xpos, ypos), str(number), font=font, fill=get_color(palette, color))
+            # TODO: нужен нормальный фикс
+            number_str = str(number)
+            xdelta = -6 if len(number_str) > 1 else 0
+            draw.text((xpos + xdelta, ypos), number_str, font=font, fill=get_color(palette, color))
             ypos += block_size
     for yindex, line in enumerate(horizontal_data):
         xpos = (horizontal_blocks - len(line) + 0.3) * block_size
         ypos = block_size * (vertical_blocks + yindex + 0.1)
         for color, number in line:
-            draw.text((xpos, ypos), str(number), font=font, fill=get_color(palette, color))
+            # TODO: нужен нормальный фикс
+            number_str = str(number)
+            xdelta = -6 if len(number_str) > 1 else 0
+            draw.text((xpos + xdelta, ypos), number_str, font=font, fill=get_color(palette, color))
             xpos += block_size
 
     nimage.convert('P').save(output_image)
