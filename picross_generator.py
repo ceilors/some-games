@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import json as js
 
 
 def by_two(arr):
@@ -15,10 +16,10 @@ def split_and_count(arr, indexes, one_color=False):
         block = arr[a:b]
         if one_color:
             if block[0] == 0:
-                results.append((block[0], len(block)))
+                results.append((int(block[0]), len(block)))
         else:
             if block[0] > 0:
-                results.append((block[0], len(block)))
+                results.append((int(block[0]), len(block)))
     return results
 
 
@@ -46,10 +47,7 @@ def get_color(palette, index):
 
 
 def find_neigh(img, x, y):
-    coords = [
-        (-1, 0), (1, 0), (0, -1), (0, 1),
-        (-1, -1), (1, -1), (-1, 1), (1, 1)
-    ]
+    coords = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
     neigh_lst = []
     for px, py in coords:
         ignore_this = px + x < 0 or px + x > img.shape[1] - 1 or \
@@ -65,7 +63,7 @@ def get2color(filename):
     gimg = np.array(oimg.convert('L'))
     img = np.array(oimg)
     zmg = np.zeros((img.shape[0] + 2, img.shape[1] + 2))
-    zmg[1:-1, 1:-1] = img[:,:]
+    zmg[1:-1, 1:-1] = img[:, :]
     img = zmg
     nimg = np.zeros(img.shape, dtype='uint8')
     for yndex, line in enumerate(img):
@@ -83,25 +81,70 @@ def get2color(filename):
     gimg += nimg[1:-1, 1:-1]
     gimg[gimg > 0] = 1
     gimg = 1 - gimg
-    gimg[gimg == 1] = 255
-    return Image.fromarray(gimg).convert('P')
+    image = Image.fromarray(gimg).convert('P')
+    image.putpalette([0, 0, 0, 255, 255, 255])
+    return image
 
 
-def generate_picross(input_image, output_image, block_size=32, render_font='resources/FiraMono-Regular.ttf', use_black=False):
-    if use_black:
-        # делаем из цветной картинки двухцветную
-        img = get2color(input_image)
+def generate_picross(input_image, output_image, **kw):
+    """
+    extra params:
+      - block_size: int, default 32
+      - render_font: string, default font from resource folder
+      - use_black: bool, default False
+      - create_json: bool, default None
+      - load_json: bool, default None
+    """
+    block_size = kw.get('block_size', 32)
+    render_font = kw.get('render_font', 'resources/FiraMono-Regular.ttf')
+    use_black = kw.get('use_black', False)
+
+    if kw.get('load_json'):
+        with open(input_image, 'r') as f:
+            data = js.load(f)
+
+            arr = np.array(data['gamepole'], dtype='uint8')
+            palette = data['palette']
+
+            img = Image.fromarray(arr).convert('P')
+            img.putpalette(palette)
+
+            horizontal_data = data['horizontal']
+            vertical_data = data['vertical']
+
+            if len(palette) == 2 * 3:
+                background_color = 'white'
+            else:
+                background_color = (0, 0, 0, 0)
+                img.info['transparency'] = 0
     else:
-        # читаем картинку и преобразуем цвета в палитру
-        img = Image.open(input_image).convert('P')
+        if use_black:
+            # делаем из цветной картинки двухцветную
+            img = get2color(input_image)
+            background_color = 'white'
+        else:
+            # читаем картинку и преобразуем цвета в палитру
+            img = Image.open(input_image).convert('P')
+            background_color = (0, 0, 0, 0)
 
-    # получаем все цвета палитры
-    palette = bytearray(img.palette.palette)
+        # получаем все цвета палитры
+        palette = bytearray(img.palette.palette)
 
-    # получаем последовательности цветов на картинке
-    arr = np.array(img)
-    horizontal_data = get_tuples(arr, one_color=use_black)
-    vertical_data = get_tuples(arr.T, one_color=use_black)
+        # получаем последовательности цветов на картинке
+        arr = np.array(img)
+        horizontal_data = get_tuples(arr, one_color=use_black)
+        vertical_data = get_tuples(arr.T, one_color=use_black)
+
+        if kw.get('create_json'):
+            with open(output_image, 'w') as f:
+                data = {
+                    'palette': list(palette),
+                    'horizontal': list(horizontal_data),
+                    'vertical': list(vertical_data),
+                    'gamepole': arr.tolist()
+                }
+                js.dump(data, f)
+            return
 
     # находим самый длинный блок
     horizontal_blocks = 0
@@ -115,7 +158,7 @@ def generate_picross(input_image, output_image, block_size=32, render_font='reso
     nimage_width = block_size * img.size[0] + horizontal_blocks * block_size
     nimage_height = block_size * img.size[1] + vertical_blocks * block_size
 
-    nimage = Image.new('RGBA', (nimage_width + 1, nimage_height + 1), (0, 0, 0, 0))
+    nimage = Image.new('RGBA', (nimage_width + 1, nimage_height + 1), background_color)
     draw = ImageDraw.Draw(nimage)
 
     # ресайзим старую картинку
@@ -161,4 +204,5 @@ def generate_picross(input_image, output_image, block_size=32, render_font='reso
 
 
 if __name__ == '__main__':
-    generate_picross('resources/mario.png', 'resources/mario-picross.png', use_black=True)
+    generate_picross('resources/mario.png', 'resources/mario-picross.json', use_black=False, create_json=True)
+    generate_picross('resources/mario-picross.json', 'resources/mario-picross.png', use_black=False, load_json=True)
