@@ -3,6 +3,10 @@ from itertools import product
 import numpy as np
 import pygame
 
+# False -- взял фигуру и перетащил
+# True  -- выбор фигуры и установка по клику мыши
+control_style_new = True
+
 colors = {
     0: (150, 150, 150),
     1: (255, 127, 127),
@@ -225,6 +229,30 @@ class App:
                 if not self.figure_drag and y >= basket_pos[0][1]:
                     self.figure_index = x // (game_width // 3)
                     self.figure_drag = True
+                elif control_style_new:
+                    # проверка на вхождения xy в границы игрового поля
+                    figure_in = x > shift_pos[0] and x < (shift_pos[0] + TILE_SIZE * board.width) and\
+                        y > shift_pos[1] and y < (shift_pos[1] + TILE_SIZE * board.height)
+                    if figure_in:
+                        index_x = int(np.ceil((x - shift_pos[0] + 8) / TILE_SIZE) - 1)
+                        index_y = int(np.ceil((y - shift_pos[1] + 8) / TILE_SIZE) - 1)
+                        # можно ли установить фигуру на поле
+                        if board.can_set((index_x, index_y), self.basket_figures[self.figure_index]):
+                            self.game_score += int(self.basket_figures[self.figure_index].sum())
+                            board.set(
+                                (index_x, index_y),
+                                self.basket_figures[self.figure_index],
+                                color=self.basket_colors[self.figure_index])
+                            # удаляем фигуру из ячейки корзины
+                            self.basket_figures[self.figure_index] = np.array([[]])
+                            self.basket_count += 1
+                            # генерируем новые фигуры, если корзина пуста
+                            if self.basket_count == 3:
+                                self.basket_figures = np.random.choice(figures, size=3)
+                                self.basket_colors = np.random.randint(1, len(colors), size=3)
+                                self.basket_count = 0
+                    self.figure_drag = False
+                    self.figure_index = -1
                 if self.game_over:
                     board.clear()
                     self.basket_figures = np.random.choice(figures, size=3)
@@ -233,7 +261,7 @@ class App:
                     self.game_over = False
                     self.game_score = 0
         if event.type == pygame.MOUSEBUTTONUP:
-            if event.button == LEFT_MOUSE:
+            if event.button == LEFT_MOUSE and not control_style_new:
                 x, y = pygame.mouse.get_pos()
                 # проверка на вхождения xy в границы игрового поля
                 figure_in = x > shift_pos[0] and x < (shift_pos[0] + TILE_SIZE * board.width) and\
@@ -261,7 +289,12 @@ class App:
 
     def on_loop(self):
         if not self.remove_animation:
-            if not self.game_over and self.remove_countdown == 1:
+            # помещение блоков для анимации
+            items = board.get_lines()
+            if len(items) > 0:
+                self.lines = items
+                self.remove_animation = True
+            if not self.game_over and self.remove_countdown == App.MAX_COUNTDOWN:
                 # проверка игры на проигрыш
                 figure_cant_set = True
                 for figure in self.basket_figures:
@@ -275,11 +308,6 @@ class App:
                             break
                 if figure_cant_set:
                     self.game_over = True
-            # помещение блоков для анимации
-            items = board.get_lines()
-            if len(items) > 0:
-                self.lines = items
-                self.remove_animation = True
         else:
             # реализация анимации удаления заполенной полосы
             if self.remove_countdown == 0:
