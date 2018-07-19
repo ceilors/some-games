@@ -62,7 +62,6 @@ def find_neigh(img, x, y):
 
 
 def get2color(filename, method='threshold'):
-    print(method)
     if method == 'threshold':
         oimg = Image.open(filename)
         gimg = np.array(oimg.convert('L'))
@@ -111,6 +110,11 @@ def get2color(filename, method='threshold'):
         # with custom 2 color palette
         image.putpalette([0, 0, 0, 255, 255, 255])
         return image
+    elif method == 'dithering':
+        # don't use for small images with size smaller than 24x24
+        image = Image.open(filename).convert('1').convert('P')
+        image.putpalette([0, 0, 0, 255, 255, 255])
+        return image
     else:
         raise NameError(f'color transformation method `{method}` not implemented!')
 
@@ -124,7 +128,7 @@ def generate_picross(input_image, output_image, **kw):
       - use_black: bool, default False
       - create_json: bool, default None
       - load_json: bool, default None
-      - method: string, default 'threshold', ('threshold', 'round')
+      - method: string, default 'threshold', ('threshold', 'round', 'dithering')
     """
     block_size = kw.get('block_size', 32)
     render_font = kw.get('render_font', 'resources/FiraMono-Regular.ttf')
