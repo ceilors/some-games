@@ -20,6 +20,9 @@ def split_and_count(arr, indexes, one_color=False):
         else:
             if block[0] > 0:
                 results.append((int(block[0]), len(block)))
+    # empty line
+    if len(results) == 0:
+        results = [(0, 0)]
     return results
 
 
@@ -58,32 +61,58 @@ def find_neigh(img, x, y):
     return neigh_lst
 
 
-def get2color(filename):
-    oimg = Image.open(filename)
-    gimg = np.array(oimg.convert('L'))
-    img = np.array(oimg)
-    zmg = np.zeros((img.shape[0] + 2, img.shape[1] + 2))
-    zmg[1:-1, 1:-1] = img[:, :]
-    img = zmg
-    nimg = np.zeros(img.shape, dtype='uint8')
-    for yndex, line in enumerate(img):
-        for xndex, item in enumerate(line):
-            if item == 0:
-                nimg[yndex, xndex] = 1
-                continue
-            neigh = find_neigh(img, xndex, yndex)
-            colors = np.array(list(map(lambda x: img[x[1], x[0]], neigh)))
-            if 0 not in colors:
-                nimg[yndex, xndex] = 1
-    gimg[gimg < 127] = 0
-    gimg[gimg > 127] = 1
-    nimg = 1 - nimg
-    gimg += nimg[1:-1, 1:-1]
-    gimg[gimg > 0] = 1
-    gimg = 1 - gimg
-    image = Image.fromarray(gimg).convert('P')
-    image.putpalette([0, 0, 0, 255, 255, 255])
-    return image
+def get2color(filename, method='threshold'):
+    print(method)
+    if method == 'threshold':
+        oimg = Image.open(filename)
+        gimg = np.array(oimg.convert('L'))
+        img = np.array(oimg)
+
+        # add empty border
+        zmg = np.zeros((img.shape[0] + 2, img.shape[1] + 2))
+        zmg[1:-1, 1:-1] = img[:, :]
+        img = zmg
+
+        nimg = np.zeros(img.shape, dtype='uint8')
+        for yndex, line in enumerate(img):
+            for xndex, item in enumerate(line):
+                if item == 0:
+                    nimg[yndex, xndex] = 1
+                    continue
+                neigh = find_neigh(img, xndex, yndex)
+                colors = np.array(list(map(lambda x: img[x[1], x[0]], neigh)))
+                if 0 not in colors:
+                    nimg[yndex, xndex] = 1
+        # threshold
+        gimg[gimg < 127] = 0
+        gimg[gimg > 127] = 1
+        # invert
+        nimg = 1 - nimg
+        # remove empty border
+        gimg += nimg[1:-1, 1:-1]
+        # only zeros and ones
+        gimg[gimg > 0] = 1
+        # invert
+        gimg = 1 - gimg
+        # create palette image
+        image = Image.fromarray(gimg).convert('P')
+        # with custom 2 color palette
+        image.putpalette([0, 0, 0, 255, 255, 255])
+        return image
+    elif method == 'round':
+        img = Image.open(filename).convert('P')
+        # change transparent color to white
+        img.putpalette([255, 255, 255] + list(img.palette.palette)[3:])
+        # convert to grayscale
+        img = img.convert('L')
+        img = np.round(np.array(img) / 255)
+        # create palette image
+        image = Image.fromarray(img * 255).convert('P')
+        # with custom 2 color palette
+        image.putpalette([0, 0, 0, 255, 255, 255])
+        return image
+    else:
+        raise NameError(f'color transformation method `{method}` not implemented!')
 
 
 def generate_picross(input_image, output_image, **kw):
@@ -95,11 +124,13 @@ def generate_picross(input_image, output_image, **kw):
       - use_black: bool, default False
       - create_json: bool, default None
       - load_json: bool, default None
+      - method: string, default 'threshold', ('threshold', 'round')
     """
     block_size = kw.get('block_size', 32)
     render_font = kw.get('render_font', 'resources/FiraMono-Regular.ttf')
     use_black = kw.get('use_black', False)
     add_image = kw.get('add_image', True)
+    two_color_method = kw.get('two_color_method', 'threshold')
 
     if kw.get('load_json'):
         with open(input_image, 'r') as f:
@@ -122,7 +153,7 @@ def generate_picross(input_image, output_image, **kw):
     else:
         if use_black:
             # делаем из цветной картинки двухцветную
-            img = get2color(input_image)
+            img = get2color(input_image, method=two_color_method)
             background_color = 'white'
         else:
             # читаем картинку и преобразуем цвета в палитру
