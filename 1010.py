@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from itertools import product
+from pathlib import Path
 import numpy as np
 import pygame
+import os
 
 # False -- взял фигуру и перетащил
 # True  -- выбор фигуры и установка по клику мыши
@@ -207,12 +209,14 @@ class App:
         self.lines = None
         self.clock = pygame.time.Clock()
         self.game_over = False
+        self.cwd = Path(os.path.dirname(os.path.abspath(__file__)))
 
     def on_init(self):
         pygame.init()
         pygame.display.set_caption('1010')
         self._display_surf = pygame.display.set_mode((self.width, self.height), pygame.HWSURFACE)
-        self.font = pygame.font.Font('resources/FiraMono-Regular.ttf', 20)
+        path_to_font = str(self.cwd / 'resources' / 'FiraMono-Regular.ttf')
+        self.font = pygame.font.Font(path_to_font, 20)
         self._running = True
 
     def on_event(self, event):
