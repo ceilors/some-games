@@ -91,6 +91,7 @@ def generate_picross(input_image, output_image, **kw):
     extra params:
       - block_size: int, default 32
       - render_font: string, default font from resource folder
+      - add_image: bool, default True
       - use_black: bool, default False
       - create_json: bool, default None
       - load_json: bool, default None
@@ -98,6 +99,7 @@ def generate_picross(input_image, output_image, **kw):
     block_size = kw.get('block_size', 32)
     render_font = kw.get('render_font', 'resources/FiraMono-Regular.ttf')
     use_black = kw.get('use_black', False)
+    add_image = kw.get('add_image', True)
 
     if kw.get('load_json'):
         with open(input_image, 'r') as f:
@@ -161,11 +163,13 @@ def generate_picross(input_image, output_image, **kw):
     nimage = Image.new('RGBA', (nimage_width + 1, nimage_height + 1), background_color)
     draw = ImageDraw.Draw(nimage)
 
-    # ресайзим старую картинку
-    picture = img.resize((block_size * img.size[0], block_size * img.size[1]), Image.BILINEAR)
-    # и переносим на новую
+    # позиция картинки
     box = (horizontal_blocks * block_size, vertical_blocks * block_size, nimage_width, nimage_height)
-    nimage.paste(picture, box=box)
+    if add_image:
+        # ресайзим старую картинку
+        picture = img.resize((block_size * img.size[0], block_size * img.size[1]), Image.BILINEAR)
+        # и переносим на новую
+        nimage.paste(picture, box=box)
     # рисуем рамку
     draw.rectangle(box, outline='black')
 
