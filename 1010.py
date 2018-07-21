@@ -231,15 +231,13 @@ class App:
 
     def generate_figures(self):
         self.basket_figures = np.random.choice(figures, size=MAX_BASKET_SIZE)
-        self.basket_colors = np.random.randint(
-            1, len(colors), size=MAX_BASKET_SIZE)
+        self.basket_colors = np.random.randint(1, len(colors), size=MAX_BASKET_SIZE)
         self.basket_count = 0
 
     def on_init(self):
         pygame.init()
         pygame.display.set_caption('1010')
-        self._display_surf = pygame.display.set_mode(
-            (self.width, self.height), pygame.HWSURFACE)
+        self._display_surf = pygame.display.set_mode((self.width, self.height), pygame.HWSURFACE)
         self._running = True
 
         path_to_font = str(self.cwd / 'resources' / 'FiraMono-Regular.ttf')
@@ -262,24 +260,19 @@ class App:
                 elif control_style_new:
                     # проверка на вхождения xy в границы игрового поля
                     figure_in = x > shift_pos[0] and x < (shift_pos[0] + TILE_SIZE * board.width) and\
-                        y > shift_pos[1] and y < (
-                            shift_pos[1] + TILE_SIZE * board.height)
+                        y > shift_pos[1] and y < (shift_pos[1] + TILE_SIZE * board.height)
                     if figure_in:
-                        index_x = int(
-                            np.ceil((x - shift_pos[0] + TILE_SHIFT) / TILE_SIZE) - 1)
-                        index_y = int(
-                            np.ceil((y - shift_pos[1] + TILE_SHIFT) / TILE_SIZE) - 1)
+                        index_x = int(np.ceil((x - shift_pos[0] + TILE_SHIFT) / TILE_SIZE) - 1)
+                        index_y = int(np.ceil((y - shift_pos[1] + TILE_SHIFT) / TILE_SIZE) - 1)
                         # можно ли установить фигуру на поле
                         if board.can_set((index_x, index_y), self.basket_figures[self.figure_index]):
-                            self.game_score += int(
-                                self.basket_figures[self.figure_index].sum())
+                            self.game_score += int(self.basket_figures[self.figure_index].sum())
                             board.set(
                                 (index_x, index_y),
                                 self.basket_figures[self.figure_index],
                                 color=self.basket_colors[self.figure_index])
                             # удаляем фигуру из ячейки корзины
-                            self.basket_figures[self.figure_index] = np.array([
-                                                                              []])
+                            self.basket_figures[self.figure_index] = np.array([[]])
                             self.basket_count += 1
                             # генерируем новые фигуры, если корзина пуста
                             if self.basket_count == MAX_BASKET_SIZE:
@@ -289,8 +282,7 @@ class App:
                 if self.game_over:
                     board.clear()
                     self.generate_figures()
-                    self.game_highscore = max(
-                        self.game_score, self.game_highscore)
+                    self.game_highscore = max(self.game_score, self.game_highscore)
                     self.game_over = False
                     self.game_score = 0
         if event.type == pygame.MOUSEBUTTONUP:
@@ -298,17 +290,13 @@ class App:
                 x, y = pygame.mouse.get_pos()
                 # проверка на вхождения xy в границы игрового поля
                 figure_in = x > shift_pos[0] and x < (shift_pos[0] + TILE_SIZE * board.width) and\
-                    y > shift_pos[1] and y < (
-                        shift_pos[1] + TILE_SIZE * board.height)
+                    y > shift_pos[1] and y < (shift_pos[1] + TILE_SIZE * board.height)
                 if figure_in:
-                    index_x = int(
-                        np.ceil((x - shift_pos[0] + TILE_SHIFT) / TILE_SIZE) - 1)
-                    index_y = int(
-                        np.ceil((y - shift_pos[1] + TILE_SHIFT) / TILE_SIZE) - 1)
+                    index_x = int(np.ceil((x - shift_pos[0] + TILE_SHIFT) / TILE_SIZE) - 1)
+                    index_y = int(np.ceil((y - shift_pos[1] + TILE_SHIFT) / TILE_SIZE) - 1)
                     # можно ли установить фигуру на поле
                     if board.can_set((index_x, index_y), self.basket_figures[self.figure_index]):
-                        self.game_score += int(
-                            self.basket_figures[self.figure_index].sum())
+                        self.game_score += int(self.basket_figures[self.figure_index].sum())
                         board.set(
                             (index_x, index_y),
                             self.basket_figures[self.figure_index],
@@ -361,8 +349,7 @@ class App:
 
     def on_render(self):
         # рисование подложки
-        pygame.draw.rect(self._display_surf, background_color,
-                         (0, 0, self.width, self.height))
+        pygame.draw.rect(self._display_surf, background_color, (0, 0, self.width, self.height))
 
         # рисование основого игрового поля
         board.draw(self._display_surf)
@@ -396,8 +383,7 @@ class App:
         render_text = f'highscore\n{self.game_highscore}\nscore\n{self.game_score}'
         if self.game_over:
             render_text += '\n\nGAME OVER'
-        draw_text(self._display_surf, self.font,
-                  text_color, text_pos, 30, render_text)
+        draw_text(self._display_surf, self.font, text_color, text_pos, 30, render_text)
 
         pygame.display.flip()
 
