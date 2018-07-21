@@ -6,5 +6,5 @@
 - [tetris](tetris.py) -- тетрис
 - [picross](picross_generator.py) -- генератор японских кроссвордов
 
-### [Лицензия]()
+### Лицензия
 [![Unlicense](https://licensebuttons.net/p/zero/1.0/88x31.png)](LICENCE)
