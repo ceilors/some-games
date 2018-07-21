@@ -9,8 +9,13 @@ import os
 # True  -- выбор фигуры и установка по клику мыши
 control_style_new = True
 
+# основные используемые цвета
+background_color = (100, 100, 100)
+layout_color = (120, 120, 120)
 colors = {
+    # игровое поле и шрифт
     0: (170, 170, 170),
+    # фигуры
     1: (255, 110, 110),
     2: (255, 212, 110),
     3: (212, 255, 110),
@@ -21,9 +26,6 @@ colors = {
     8: (212, 110, 255),
     9: (255, 110, 212)
 }
-
-game_width = 574
-game_height = 542
 
 figures = [
     # коробки всех размеров
@@ -41,18 +43,31 @@ figures = [
     np.array([[True, False], [True, True]]),
 ]
 
+# сдвига начала координат
 shift_pos = (10, 10)
+# размер одного тайла
 TILE_SIZE = 32
-TILE_SHIFT = 28
-MAX_TILES = 5
+# сдвиги и пробелы между тайлами для отрисовки
+TILE_SHIFT = 8
+TILE_SKIP = 28
+# размер корзины для фигур
+MAX_BASKET_TILES = 5
+# количество ячеек в корзине для фигур
 MAX_BASKET_SIZE = 3
+# размер игровой доски
+BOARD_SIZE = 10
 
-# mouse pressed key
+# идентификаторы кнопок мыши в pygame
 LEFT_MOUSE = 1
 RIGHT_MOUSE = 3
 
 # координаты с корзинам с фигурами
-basket_pos = [[x + shift_pos[0], TILE_SIZE * 11 + shift_pos[1]] for x in np.arange(0, 3 * 5 * TILE_SIZE, TILE_SIZE * 6)]
+basket_pos = [[x + shift_pos[0], TILE_SIZE * 11 + shift_pos[1]]
+              for x in np.arange(0, 3 * MAX_BASKET_TILES * TILE_SIZE, TILE_SIZE * 6)]
+
+# автоматический размер окна
+game_width = basket_pos[2][0] + (basket_pos[1][0] - basket_pos[0][0])
+game_height = TILE_SIZE * (BOARD_SIZE + MAX_BASKET_TILES + 2) + shift_pos[1]
 
 
 def remove_zeros(arr):
@@ -109,7 +124,8 @@ def AAfilledRoundedRect(surface, rect, color, radius=0.2):
     rectangle = pygame.Surface(rect.size, pygame.SRCALPHA)
     circle = pygame.Surface([min(rect.size) * 3] * 2, pygame.SRCALPHA)
     pygame.draw.ellipse(circle, (0, 0, 0), circle.get_rect(), 0)
-    circle = pygame.transform.smoothscale(circle, [int(min(rect.size) * radius)] * 2)
+    circle = pygame.transform.smoothscale(
+        circle, [int(min(rect.size) * radius)] * 2)
     radius = rectangle.blit(circle, (0, 0))
     radius.bottomright = rect.bottomright
     rectangle.blit(circle, radius)
@@ -170,7 +186,8 @@ class Board:
     def draw(self, display):
         for j, row in enumerate(self.cells):
             for i, item in enumerate(row):
-                rect = (shift_pos[0] + i * TILE_SIZE + 8, shift_pos[1] + j * TILE_SIZE + 8, TILE_SHIFT, TILE_SHIFT)
+                rect = (shift_pos[0] + i * TILE_SIZE + TILE_SHIFT,
+                        shift_pos[1] + j * TILE_SIZE + TILE_SHIFT, TILE_SKIP, TILE_SKIP)
                 AAfilledRoundedRect(display, rect, colors[item])
 
     def get_lines(self):
@@ -184,7 +201,7 @@ class Board:
         return items
 
 
-board = Board()
+board = Board(size_x=BOARD_SIZE, size_y=BOARD_SIZE)
 figures = prepare_figures(figures)
 
 
@@ -195,29 +212,38 @@ class App:
     def __init__(self, width=game_width, height=game_height):
         self.figure_drag = False
         self.figure_index = -1
-        self.basket_count = 0
-        self.basket_figures = np.random.choice(figures, size=3)
-        self.basket_colors = np.random.randint(1, len(colors), size=3)
+        self.generate_figures()
+
         self.width = width
         self.height = height
         self._running = True
         self._display_surf = None
+        self.game_over = False
+        self.clock = pygame.time.Clock()
+        self.cwd = Path(os.path.dirname(os.path.abspath(__file__)))
+
         self.remove_animation = False
         self.remove_countdown = App.MAX_COUNTDOWN
+
         self.game_score = 0
         self.game_highscore = 0
         self.lines = None
-        self.clock = pygame.time.Clock()
-        self.game_over = False
-        self.cwd = Path(os.path.dirname(os.path.abspath(__file__)))
+
+    def generate_figures(self):
+        self.basket_figures = np.random.choice(figures, size=MAX_BASKET_SIZE)
+        self.basket_colors = np.random.randint(
+            1, len(colors), size=MAX_BASKET_SIZE)
+        self.basket_count = 0
 
     def on_init(self):
         pygame.init()
         pygame.display.set_caption('1010')
-        self._display_surf = pygame.display.set_mode((self.width, self.height), pygame.HWSURFACE)
+        self._display_surf = pygame.display.set_mode(
+            (self.width, self.height), pygame.HWSURFACE)
+        self._running = True
+
         path_to_font = str(self.cwd / 'resources' / 'FiraMono-Regular.ttf')
         self.font = pygame.font.Font(path_to_font, 20)
-        self._running = True
 
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -231,37 +257,40 @@ class App:
             if event.button == LEFT_MOUSE:
                 x, y = pygame.mouse.get_pos()
                 if not self.figure_drag and y >= basket_pos[0][1]:
-                    self.figure_index = x // (game_width // 3)
+                    self.figure_index = x // (game_width // MAX_BASKET_SIZE)
                     self.figure_drag = True
                 elif control_style_new:
                     # проверка на вхождения xy в границы игрового поля
                     figure_in = x > shift_pos[0] and x < (shift_pos[0] + TILE_SIZE * board.width) and\
-                        y > shift_pos[1] and y < (shift_pos[1] + TILE_SIZE * board.height)
+                        y > shift_pos[1] and y < (
+                            shift_pos[1] + TILE_SIZE * board.height)
                     if figure_in:
-                        index_x = int(np.ceil((x - shift_pos[0] + 8) / TILE_SIZE) - 1)
-                        index_y = int(np.ceil((y - shift_pos[1] + 8) / TILE_SIZE) - 1)
+                        index_x = int(
+                            np.ceil((x - shift_pos[0] + TILE_SHIFT) / TILE_SIZE) - 1)
+                        index_y = int(
+                            np.ceil((y - shift_pos[1] + TILE_SHIFT) / TILE_SIZE) - 1)
                         # можно ли установить фигуру на поле
                         if board.can_set((index_x, index_y), self.basket_figures[self.figure_index]):
-                            self.game_score += int(self.basket_figures[self.figure_index].sum())
+                            self.game_score += int(
+                                self.basket_figures[self.figure_index].sum())
                             board.set(
                                 (index_x, index_y),
                                 self.basket_figures[self.figure_index],
                                 color=self.basket_colors[self.figure_index])
                             # удаляем фигуру из ячейки корзины
-                            self.basket_figures[self.figure_index] = np.array([[]])
+                            self.basket_figures[self.figure_index] = np.array([
+                                                                              []])
                             self.basket_count += 1
                             # генерируем новые фигуры, если корзина пуста
-                            if self.basket_count == 3:
-                                self.basket_figures = np.random.choice(figures, size=3)
-                                self.basket_colors = np.random.randint(1, len(colors), size=3)
-                                self.basket_count = 0
+                            if self.basket_count == MAX_BASKET_SIZE:
+                                self.generate_figures()
                     self.figure_drag = False
                     self.figure_index = -1
                 if self.game_over:
                     board.clear()
-                    self.basket_figures = np.random.choice(figures, size=3)
-                    self.basket_colors = np.random.randint(1, len(colors), size=3)
-                    self.game_highscore = max(self.game_score, self.game_highscore)
+                    self.generate_figures()
+                    self.game_highscore = max(
+                        self.game_score, self.game_highscore)
                     self.game_over = False
                     self.game_score = 0
         if event.type == pygame.MOUSEBUTTONUP:
@@ -269,13 +298,17 @@ class App:
                 x, y = pygame.mouse.get_pos()
                 # проверка на вхождения xy в границы игрового поля
                 figure_in = x > shift_pos[0] and x < (shift_pos[0] + TILE_SIZE * board.width) and\
-                    y > shift_pos[1] and y < (shift_pos[1] + TILE_SIZE * board.height)
+                    y > shift_pos[1] and y < (
+                        shift_pos[1] + TILE_SIZE * board.height)
                 if figure_in:
-                    index_x = int(np.ceil((x - shift_pos[0] + 8) / TILE_SIZE) - 1)
-                    index_y = int(np.ceil((y - shift_pos[1] + 8) / TILE_SIZE) - 1)
+                    index_x = int(
+                        np.ceil((x - shift_pos[0] + TILE_SHIFT) / TILE_SIZE) - 1)
+                    index_y = int(
+                        np.ceil((y - shift_pos[1] + TILE_SHIFT) / TILE_SIZE) - 1)
                     # можно ли установить фигуру на поле
                     if board.can_set((index_x, index_y), self.basket_figures[self.figure_index]):
-                        self.game_score += int(self.basket_figures[self.figure_index].sum())
+                        self.game_score += int(
+                            self.basket_figures[self.figure_index].sum())
                         board.set(
                             (index_x, index_y),
                             self.basket_figures[self.figure_index],
@@ -284,10 +317,8 @@ class App:
                         self.basket_figures[self.figure_index] = np.array([[]])
                         self.basket_count += 1
                         # генерируем новые фигуры, если корзина пуста
-                        if self.basket_count == 3:
-                            self.basket_figures = np.random.choice(figures, size=3)
-                            self.basket_colors = np.random.randint(1, len(colors), size=3)
-                            self.basket_count = 0
+                        if self.basket_count == MAX_BASKET_SIZE:
+                            self.generate_figures()
                 self.figure_drag = False
                 self.figure_index = -1
 
@@ -330,16 +361,21 @@ class App:
 
     def on_render(self):
         # рисование подложки
-        pygame.draw.rect(self._display_surf, (100, 100, 100), (0, 0, self.width, self.height))
+        pygame.draw.rect(self._display_surf, background_color,
+                         (0, 0, self.width, self.height))
+
         # рисование основого игрового поля
         board.draw(self._display_surf)
+
         # рисование подложки для фигур
         for k in range(MAX_BASKET_SIZE):
-            for j in range(MAX_TILES):
-                for i in range(MAX_TILES):
-                    rect = (shift_pos[0] + k * TILE_SIZE * (MAX_TILES + 1) + i * TILE_SIZE + 8,
-                            shift_pos[1] + (board.height + 1) * TILE_SIZE + j * TILE_SIZE + 8, TILE_SHIFT, TILE_SHIFT)
-                    AAfilledRoundedRect(self._display_surf, rect, (120, 120, 120))
+            for j in range(MAX_BASKET_TILES):
+                for i in range(MAX_BASKET_TILES):
+                    rect = [shift_pos[0], shift_pos[1], TILE_SKIP, TILE_SKIP]
+                    rect[0] += k * TILE_SIZE * (MAX_BASKET_TILES + 1) + i * TILE_SIZE + TILE_SHIFT
+                    rect[1] += (board.height + 1) * TILE_SIZE + j * TILE_SIZE + TILE_SHIFT
+                    AAfilledRoundedRect(self._display_surf, rect, layout_color)
+
         # рисование фигура в корзинах
         for index, (x, y) in enumerate(basket_pos):
             if index == self.figure_index:
@@ -349,15 +385,20 @@ class App:
             for j, row in enumerate(self.basket_figures[index].T):
                 for i, item in enumerate(row):
                     if item > 0:
-                        rect = (x + i * TILE_SIZE + 8, y + j * TILE_SIZE + 8, TILE_SHIFT, TILE_SHIFT)
-                        AAfilledRoundedRect(self._display_surf, rect, colors[self.basket_colors[index]])
+                        rect = (x + i * TILE_SIZE + TILE_SHIFT, y + j *
+                                TILE_SIZE + TILE_SHIFT, TILE_SKIP, TILE_SKIP)
+                        AAfilledRoundedRect(
+                            self._display_surf, rect, colors[self.basket_colors[index]])
+
         # вывод игровых очков
         text_pos = (TILE_SIZE * (board.width + 1), shift_pos[1])
         text_color = (200, 200, 200)
         render_text = f'highscore\n{self.game_highscore}\nscore\n{self.game_score}'
         if self.game_over:
             render_text += '\n\nGAME OVER'
-        draw_text(self._display_surf, self.font, text_color, text_pos, 30, render_text)
+        draw_text(self._display_surf, self.font,
+                  text_color, text_pos, 30, render_text)
+
         pygame.display.flip()
 
     def on_cleanup(self):
