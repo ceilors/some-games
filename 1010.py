@@ -92,7 +92,7 @@ def rotate(figure):
 
 
 def prepare_figures(figures):
-    result = []
+    result = figures[:3]
     # генерируем все положения для линейных фигур (2 варианта)
     for figure in figures[3:][:4]:
         r_figure = rotate(figure)
