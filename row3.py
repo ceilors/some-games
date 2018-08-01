@@ -28,7 +28,7 @@ if __name__ == '__main__':
     
     surface = pygame.Surface(window_size)
     surface.fill(background_color)
-    tiles = pygame.image.load(str(CWD / 'resources' / 'tile.png'))
+    tiles = pygame.image.load(str(CWD / 'resources' / 'tiles.png'))
 
     while not quit_flag:
         # surface.fill(background_color)
@@ -39,6 +39,10 @@ if __name__ == '__main__':
                 else:
                     tile_rect = (tile_size, 0, tile_size, tile_size)
                 surface.blit(tiles, (x * tile_size, y * tile_size), tile_rect)
+
+        for i in range(4):
+            tile_rect = (tile_size * (i + 2), 0, tile_size, tile_size)
+            surface.blit(tiles, (i * tile_size, 0), tile_rect)        
 
         screen.blit(surface, (0, 0))
         pygame.display.update()
