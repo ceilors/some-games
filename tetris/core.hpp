@@ -65,6 +65,7 @@ public:
     Field(uint8_t width=10, uint8_t height=15): _width(width), _height(height), field(width * height) {}
 
     void set(Figure * f);
+    void clear();
     void clear_line(uint8_t index);
     bool check_line(uint8_t index);
     bool intersect(Figure * f);
@@ -81,6 +82,7 @@ class Tetris {
     Field field;
 public:
     Tetris();
+    void gameover();
     void step();
     void action(uint8_t stat);
     void render(SDL_Renderer * r);
