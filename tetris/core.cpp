@@ -163,6 +163,7 @@ void Figure::rotate(bool direction) {
 }
 
 void Tetris::step() {
+    // где-то здесь должна быть проверка на проигрыш :)
     curr.pos.second--;
     if (field.intersect(&curr)) {
         // установка и генерирование фигуры
