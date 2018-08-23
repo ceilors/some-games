@@ -212,7 +212,7 @@ if __name__ == '__main__':
     # игровой таймер
     clock = pygame.time.Clock()
     # получаем стандартный шрифт
-    font = pygame.font.Font('resources/FiraMono-Regular.ttf', 25)
+    font = pygame.font.Font('../resources/FiraMono-Regular.ttf', 25)
     # создание поверхности для рисования
     surface = pygame.Surface(window_size)
 
