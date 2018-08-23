@@ -59,8 +59,8 @@ pair_xy Field::border_outside(Figure * f) {
 
 void Field::clear_line(uint8_t index) {
     for (uint8_t y = index + 1; y < _height; ++y) {
-        for (uint8_t x = 0; x < _width; ++x) {
-            this->operator()(x, y - 1) = this->operator()(x, y);
+        for (uint8_t x = 1; x < _width - 1; ++x) {
+            (*this)(x, y - 1) = (*this)(x, y);
         }
     }
 }
@@ -74,8 +74,12 @@ bool Field::check_line(uint8_t index) {
 }
 
 void Field::clear() {
-    for (int i = 0; i < _width * _height; ++i) {
-        field[i] = 0;
+    for (uint8_t y = 0; y < _height; ++y) {
+        (*this)(0, y) = 1;
+        (*this)(_width - 1, y) = 1;
+    }
+    for (uint8_t x = 0; x < _width; ++x) {
+        (*this)(x, 0) = 1;
     }
 }
 
@@ -184,9 +188,9 @@ void Tetris::step() {
         } else {
             field.set(&curr);
             curr = next;
-            next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+            next.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
             // очистка заполненных ячеек поля
-            for (int index = field.height() - 1; index >= 0; --index) {
+            for (int index = field.height() - 1; index >= 1; --index) {
                 // здесь можно запилить подсчёт очков
                 if (field.check_line((uint8_t)index)) {
                     field.clear_line((uint8_t)index);
@@ -197,10 +201,6 @@ void Tetris::step() {
 }
  
 void Tetris::action(uint8_t stat) {
-    // for MOVE_HARD_DOWN
-    Figure t = curr;
-    pair_xy r;
-
     switch (stat) {
         case MOVE_LEFT:
             curr.pos.first--;
@@ -220,7 +220,8 @@ void Tetris::action(uint8_t stat) {
                 curr.pos.second++;
             }
             break;
-        case MOVE_HARD_DOWN:
+        case MOVE_HARD_DOWN: {
+            Figure t = curr;
             // TODO: переписать, т.к. есть база с зависанием при переполнении стакана
             t.pos.second = field.height() - curr.y_max + 1;
             while (field.intersect(&t)) {
@@ -228,31 +229,36 @@ void Tetris::action(uint8_t stat) {
             }
             curr.pos.second = t.pos.second;
             break;
-        case ROTATE_LEFT:
+        }
+        case ROTATE_LEFT: {
             curr.rotate();
             // проверка на выход за границы игрового поля
-            r = field.border_outside(&curr);
+            pair_xy r = field.border_outside(&curr);
             if (r.first != 0 || r.second != 0) {
                 curr.pos.first -= r.first;
                 curr.pos.second -= r.second;
             }
             break;
-        case ROTATE_RIGHT:
+        }
+        case ROTATE_RIGHT: {
             curr.rotate(false);
-            r = field.border_outside(&curr);
+            pair_xy r = field.border_outside(&curr);
             if (r.first != 0 || r.second != 0) {
                 curr.pos.first -= r.first;
                 curr.pos.second -= r.second;
             }
             break;
+        }
         default:
             throw std::invalid_argument("invalid figure action");
     }
 }
 
 Tetris::Tetris() {
-    curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-    next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+    // curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+    // next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+    curr.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+    next.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
 }
 
 void draw_box(SDL_Renderer * r, uint8_t x, uint8_t y) {
@@ -281,7 +287,7 @@ void Tetris::render(SDL_Renderer * r) {
                 draw_box(r, x, field.height() - y - 1);
             }
         }
-    }
+}
     SDL_RenderDrawRect(r, &border);
     SDL_SetRenderDrawColor(r, 0, 0, 0, SDL_ALPHA_OPAQUE);
 }

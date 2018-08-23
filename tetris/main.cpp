@@ -2,8 +2,8 @@
 #include <SDL2/SDL.h>
 #include "core.hpp"
 
-const uint16_t WINDOW_WIDTH = 256;
-const uint16_t WINDOW_HEIGHT = 240;
+const uint16_t WINDOW_WIDTH = 500;
+const uint16_t WINDOW_HEIGHT = 500;
 
 void sdl_error_quit(const char * function) {
     std::cout << function << " error:" << SDL_GetError() << std::endl;

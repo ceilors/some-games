@@ -62,7 +62,9 @@ class Field {
     const uint8_t _height;
     std::vector<uint8_t> field;
 public:
-    Field(uint8_t width=10, uint8_t height=15): _width(width), _height(height), field(width * height) {}
+    Field(uint8_t width=10, uint8_t height=15): _width(width + 2), _height(height + 1), field(_width * _height) {
+        clear();
+    }
 
     void set(Figure * f);
     void clear();
