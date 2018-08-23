@@ -8,9 +8,6 @@
 // SDL2
 #include <SDL2/SDL.h>
 
-typedef std::pair<uint8_t, uint8_t> pair_xy;
-typedef std::vector<pair_xy> figure_t;
-
 /* 
 для enum'мов не менять нумерацию
 */
@@ -39,8 +36,18 @@ enum GameControl {
     MOVE_SOFT_DOWN = 2,
     MOVE_HARD_DOWN = 3,
     ROTATE_LEFT = 4,
-    ROTATE_RIGHT = 5
+    ROTATE_RIGHT = 5,
+    NEW_FIGURE = 6
 };
+
+struct point {
+    int8_t x, y;
+
+    point() {}
+    point(int8_t _x, int8_t _y): x(_x), y(_y) {}
+};
+
+typedef std::vector<point> figure_t;
 
 class Figure {
 public:
@@ -50,11 +57,11 @@ public:
     void rotate(bool direction=true);
 
     figure_t coords;
-    pair_xy pos;
+    point pos;
     uint8_t figure_max;
     uint8_t angle_max;
-    uint8_t x_max;
-    uint8_t y_max;
+    int8_t x_max;
+    int8_t y_max;
 };
 
 class Field {
@@ -71,7 +78,7 @@ public:
     void clear_line(uint8_t index);
     bool check_line(uint8_t index);
     bool intersect(Figure * f);
-    pair_xy border_outside(Figure * f);
+    point border_outside(Figure * f);
 
     const uint8_t width() { return _width; }
     const uint8_t height() { return _height; }
@@ -86,6 +93,6 @@ public:
     Tetris();
     void gameover();
     void step();
-    void action(uint8_t stat);
+    void move(uint8_t direction);
     void render(SDL_Renderer * r);
 };

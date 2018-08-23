@@ -32,7 +32,7 @@ int main() {
     }
     while (!quit_flag) {
         if (update_counter == 0) {
-            tetris.step();
+            tetris.move(MOVE_SOFT_DOWN);
             update_counter = update_counter_max;
         } else {
             update_counter--;
@@ -44,23 +44,30 @@ int main() {
                     break;
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
+                        case SDLK_q:
+                        case SDLK_ESCAPE:
+                            quit_flag = true;
+                            break;
                         case SDLK_w:
-                            tetris.action(MOVE_HARD_DOWN);
+                            tetris.move(MOVE_HARD_DOWN);
                             break;
                         case SDLK_s:
-                            tetris.action(MOVE_SOFT_DOWN);
+                            tetris.move(MOVE_SOFT_DOWN);
                             break;
                         case SDLK_a:
-                            tetris.action(MOVE_LEFT);
+                            tetris.move(MOVE_LEFT);
                             break;
                         case SDLK_d:
-                            tetris.action(MOVE_RIGHT);
+                            tetris.move(MOVE_RIGHT);
                             break;
                         case SDLK_g:
-                            tetris.action(ROTATE_LEFT);
+                            tetris.move(ROTATE_LEFT);
                             break;
                         case SDLK_h:
-                            tetris.action(ROTATE_RIGHT);
+                            tetris.move(ROTATE_RIGHT);
+                            break;
+                        case SDLK_SPACE:
+                            tetris.move(NEW_FIGURE);
                             break;
                         default:
                             break;
