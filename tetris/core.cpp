@@ -21,7 +21,7 @@ uint8_t & Field::operator () (uint8_t x, uint8_t y) {
 
 void Field::set(Figure * f) {
     for (figure_t::iterator it = f->coords.begin(); it != f->coords.end(); ++it) {
-        this->operator()(it->x + f->pos.x, it->y + f->pos.y) = 1;
+        (*this)(it->x + f->pos.x, it->y + f->pos.y) = 1;
     }
 }
 
@@ -32,15 +32,15 @@ bool Field::intersect(Figure * f) {
     // }
     for (figure_t::iterator it = f->coords.begin(); it != f->coords.end(); ++it) {
         // выход за границы
-        if ((it->x + f->pos.x >= _width + 1) || (it->y + f->pos.y >= _height)) {
-            return true;
-        }
-        try {
+        //if ((it->x + f->pos.x >= _width + 1) || (it->y + f->pos.y >= _height)) {
+            //return true;
+        //}
             // пересечение с фигурой
-            if (this->operator()(it->x + f->pos.x, it->y + f->pos.y)) {
+            try {
+            if ((*this)(it->x + f->pos.x, it->y + f->pos.y)) {
                 return true;
             }
-        } catch (std::out_of_range &e) {}
+            } catch (std::out_of_range &) { return true; }
     }
     return false;
 }
@@ -56,12 +56,15 @@ void Field::clear_line(uint8_t index) {
 bool Field::check_line(uint8_t index) {
     uint8_t filled = 0;
     for (uint8_t x = 0; x < _width; ++x) {
-        filled += this->operator()(x, index);
+        filled += (*this)(x, index);
     }
     return filled == _width;
 }
 
 void Field::clear() {
+    for (std::vector<uint8_t>::iterator i = field.begin(); i != field.end(); ++i) {
+        *i = 0;
+    }
     for (uint8_t y = 0; y < _height; ++y) {
         (*this)(0, y) = 1;
         (*this)(_width - 1, y) = 1;
@@ -161,11 +164,11 @@ void Figure::rotate(bool direction) {
 }
 
 void Tetris::gameover() {
+    field.clear();
     curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
     next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-    field.clear();
 }
- 
+
 void Tetris::move(uint8_t direction) {
     point _shifts[] = {point(-1, 0), point(1, 0), point(0, -1), point(0, 1)};
     figure_t shifts(_shifts, _shifts+4);
@@ -176,7 +179,6 @@ void Tetris::move(uint8_t direction) {
             curr.pos.x--;
             if (field.intersect(&curr)) {
                 curr.pos.x++;
-                set_flag = true;
             }
             break;
         }
@@ -184,7 +186,6 @@ void Tetris::move(uint8_t direction) {
             curr.pos.x++;
             if (field.intersect(&curr)) {
                 curr.pos.x--;
-                set_flag = true;
             }
             break;
         }
@@ -231,7 +232,6 @@ void Tetris::move(uint8_t direction) {
                 if (ignored_all) {
                     curr.rotate(!side);
                 }
-                set_flag = true;
             }
             break;
         }
@@ -243,17 +243,23 @@ void Tetris::move(uint8_t direction) {
             throw std::invalid_argument("invalid figure action");
     }
     if (set_flag) {
-        // field.set(&curr);
-        // curr = next;
-        // // next.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-        // next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-        // // очистка заполненных ячеек поля
-        // for (int index = field.height() - 1; index >= 1; --index) {
-        //     // здесь можно запилить подсчёт очков
-        //     if (field.check_line((uint8_t)index)) {
-        //         field.clear_line((uint8_t)index);
-        //     }
-        // }
+        try {
+         field.set(&curr);
+        } catch (std::out_of_range &) {
+            std::cout << "gameover" << std::endl;
+            gameover();
+            return;
+        }
+         curr = next;
+         // next.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+         next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+         // очистка заполненных ячеек поля
+         for (int index = field.height() - 1; index >= 1; --index) {
+             // здесь можно запилить подсчёт очков
+             if (field.check_line((uint8_t)index)) {
+                 field.clear_line((uint8_t)index);
+             }
+         }
     }
 }
 
