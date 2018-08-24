@@ -11,7 +11,7 @@ void sdl_error_quit(const char * function) {
 }
 
 int main() {
-    const uint8_t update_counter_max = 20;
+    const uint8_t update_counter_max = 30;
     uint8_t update_counter = update_counter_max;
     bool quit_flag = false;
     SDL_Event event;
@@ -31,12 +31,6 @@ int main() {
         sdl_error_quit("SDL_CreateRenderer");
     }
     while (!quit_flag) {
-        if (update_counter == 0) {
-            tetris.move(MOVE_SOFT_DOWN);
-            update_counter = update_counter_max;
-        } else {
-            update_counter--;
-        }
         while (SDL_PollEvent(&event) != 0) {
             switch (event.type) {
                 case SDL_QUIT:
@@ -66,9 +60,6 @@ int main() {
                         case SDLK_h:
                             tetris.move(ROTATE_RIGHT);
                             break;
-                        case SDLK_SPACE:
-                            tetris.move(NEW_FIGURE);
-                            break;
                         default:
                             break;
                     }
@@ -80,6 +71,12 @@ int main() {
         SDL_RenderClear(render);
         tetris.render(render);
         SDL_RenderPresent(render);
+        if (update_counter == 0) {
+            tetris.move(MOVE_SOFT_DOWN);
+            update_counter = update_counter_max;
+        } else {
+            update_counter--;
+        }
     }
     SDL_DestroyRenderer(render);
     SDL_DestroyWindow(wnd);

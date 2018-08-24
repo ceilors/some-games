@@ -36,8 +36,7 @@ enum GameControl {
     MOVE_SOFT_DOWN = 2,
     MOVE_HARD_DOWN = 3,
     ROTATE_LEFT = 4,
-    ROTATE_RIGHT = 5,
-    NEW_FIGURE = 6
+    ROTATE_RIGHT = 5
 };
 
 struct point {
@@ -69,9 +68,7 @@ class Field {
     const uint8_t _height;
     std::vector<uint8_t> field;
 public:
-    Field(uint8_t width=10, uint8_t height=15): _width(width + 2), _height(height + 1), field(_width * _height) {
-        clear();
-    }
+    Field(uint8_t width=10, uint8_t height=15): _width(width + 2), _height(height + 1), field(_width * _height) {}
 
     void set(Figure * f);
     void clear();

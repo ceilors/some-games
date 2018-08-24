@@ -4,6 +4,7 @@
 static uint8_t y8 = 1;
 
 static uint8_t tile_size = 16;
+static uint8_t tile_shift = 4;
 
 uint8_t xorshift8(void) {
     y8 ^= (y8 << 7);
@@ -27,20 +28,13 @@ void Field::set(Figure * f) {
 
 bool Field::intersect(Figure * f) {
     // достижение дна
-    // if (f->pos.y + f->y_max == 0 || f->pos.y + f->y_max > _height) {
-    //     return true;
-    // }
     for (figure_t::iterator it = f->coords.begin(); it != f->coords.end(); ++it) {
-        // выход за границы
-        //if ((it->x + f->pos.x >= _width + 1) || (it->y + f->pos.y >= _height)) {
-            //return true;
-        //}
-            // пересечение с фигурой
-            try {
+        // пересечение с фигурой
+        try {
             if ((*this)(it->x + f->pos.x, it->y + f->pos.y)) {
                 return true;
             }
-            } catch (std::out_of_range &) { return true; }
+        } catch (std::out_of_range &) { return true; }
     }
     return false;
 }
@@ -165,8 +159,8 @@ void Figure::rotate(bool direction) {
 
 void Tetris::gameover() {
     field.clear();
-    curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-    next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+    curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height() - 1);
+    next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height() - 1);
 }
 
 void Tetris::move(uint8_t direction) {
@@ -235,24 +229,19 @@ void Tetris::move(uint8_t direction) {
             }
             break;
         }
-        case NEW_FIGURE: {
-            curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-            break;
-        }
         default:
             throw std::invalid_argument("invalid figure action");
     }
     if (set_flag) {
         try {
-         field.set(&curr);
+            field.set(&curr);
         } catch (std::out_of_range &) {
             std::cout << "gameover" << std::endl;
             gameover();
             return;
         }
          curr = next;
-         // next.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-         next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+         next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height() - 1);
          // очистка заполненных ячеек поля
          for (int index = field.height() - 1; index >= 1; --index) {
              // здесь можно запилить подсчёт очков
@@ -260,19 +249,32 @@ void Tetris::move(uint8_t direction) {
                  field.clear_line((uint8_t)index);
              }
          }
+         // проверяем, что фигуре ничего не мешает
+         if (field.intersect(&curr)) {
+            std::cout << "gameover" << std::endl;
+            gameover();
+            return;
+         }
     }
 }
 
 Tetris::Tetris() {
-    // curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-    // next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-    curr.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
-    next.set(FIGURE_O, xorshift8() % (ANGLE_270 + 1), field.width(), field.height());
+    gameover();
 }
 
 void draw_box(SDL_Renderer * r, int8_t x, int8_t y) {
-    SDL_Rect box = { x * tile_size, y * tile_size, tile_size, tile_size };
+    const uint8_t LINES_COUNT = 5;
+    SDL_Rect box = { x * tile_size + tile_shift, y * tile_size + tile_shift,
+                     tile_size - tile_shift, tile_size - tile_shift };
+    SDL_Point border[LINES_COUNT] = {
+        {x * tile_size, y * tile_size},
+        {(x + 1) * tile_size, y * tile_size},
+        {(x + 1) * tile_size, (y + 1) * tile_size},
+        {x * tile_size, (y + 1) * tile_size},
+        {x * tile_size, y * tile_size}
+    };
     SDL_RenderFillRect(r, &box);
+    SDL_RenderDrawLines(r, border, LINES_COUNT);
 }
 
 void Tetris::render(SDL_Renderer * r) {
