@@ -164,6 +164,8 @@ void Tetris::gameover() {
 }
 
 void Tetris::move(uint8_t direction) {
+    const uint8_t time_to_set_default = 2;
+    static uint8_t time_to_set = time_to_set_default;
     point _shifts[] = {point(-1, 0), point(1, 0), point(0, -1), point(0, 1)};
     figure_t shifts(_shifts, _shifts+4);
     bool set_flag = false;
@@ -232,7 +234,8 @@ void Tetris::move(uint8_t direction) {
         default:
             throw std::invalid_argument("invalid figure action");
     }
-    if (set_flag) {
+    if (set_flag && time_to_set == 0) {
+        time_to_set = time_to_set_default;
         try {
             field.set(&curr);
         } catch (std::out_of_range &) {
@@ -249,12 +252,14 @@ void Tetris::move(uint8_t direction) {
                  field.clear_line((uint8_t)index);
              }
          }
-         // проверяем, что фигуре ничего не мешает
+         // проверяем что фигуре ничего не мешает
          if (field.intersect(&curr)) {
             std::cout << "gameover" << std::endl;
             gameover();
             return;
          }
+    } else if (set_flag) {
+        time_to_set--;
     }
 }
 
