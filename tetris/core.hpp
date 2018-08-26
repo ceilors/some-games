@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <utility>
 #include <vector>
+#include <ctime>
 
 // SDL2
 #include <SDL2/SDL.h>

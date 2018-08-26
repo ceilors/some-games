@@ -1,7 +1,7 @@
 #include "core.hpp"
 
 // simple random
-static uint8_t y8 = 1;
+static uint8_t y8 = (uint8_t)time(NULL);
 
 static uint8_t tile_size = 16;
 static uint8_t tile_shift = 4;
