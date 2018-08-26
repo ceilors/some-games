@@ -1,4 +1,12 @@
-all:
-	g++ -std=c++98 -Wall `sdl2-config --cflags --libs` -lSDL2_image core.cpp main.cpp -o tetris
+CC=g++
+CFLAGS=-std=c++98 -Wall $(shell sdl2-config --cflags)
+LFLAGS=$(shell sdl2-config --libs) -lSDL2_image
+app=tetris
+objects := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+
+all: $(objects)
+	$(CC) $(LFLAGS) $(objects) -o $(app)
+$(objects): %.o: %.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 clean:
-	$(RM) tetris
+	-$(RM) $(app) $(objects)
