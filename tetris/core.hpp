@@ -8,6 +8,7 @@
 
 // SDL2
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 /* 
 для enum'мов не менять нумерацию
@@ -53,13 +54,14 @@ class Figure {
 public:
     Figure() : figure_max(FIGURE_Z), angle_max(ANGLE_270) {}
 
-    void set(uint8_t figure, uint8_t angle, uint8_t w, uint8_t h);
+    void set(uint8_t figure, uint8_t c, uint8_t w, uint8_t h);
     void rotate(bool direction=true);
 
     figure_t coords;
     point pos;
     uint8_t figure_max;
     uint8_t angle_max;
+    uint8_t color;
     int8_t x_max;
     int8_t y_max;
 };
@@ -87,8 +89,10 @@ class Tetris {
     Figure curr;
     Figure next;
     Field field;
+    SDL_Texture * tile;
 public:
-    Tetris();
+    Tetris(SDL_Renderer * r);
+    ~Tetris();
     void gameover();
     void step();
     void move(uint8_t direction);

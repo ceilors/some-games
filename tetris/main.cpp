@@ -16,8 +16,6 @@ int main() {
     bool quit_flag = false;
     SDL_Event event;
 
-    Tetris tetris = Tetris();
-
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         sdl_error_quit("SDL_Init");
     }
@@ -30,6 +28,7 @@ int main() {
     if (render == NULL) {
         sdl_error_quit("SDL_CreateRenderer");
     }
+    Tetris tetris = Tetris(render);
     while (!quit_flag) {
         while (SDL_PollEvent(&event) != 0) {
             switch (event.type) {

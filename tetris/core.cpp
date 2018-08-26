@@ -3,8 +3,8 @@
 // simple random
 static uint8_t y8 = (uint8_t)time(NULL);
 
+static uint8_t max_color = 3;
 static uint8_t tile_size = 16;
-static uint8_t tile_shift = 4;
 
 uint8_t xorshift8(void) {
     y8 ^= (y8 << 7);
@@ -22,7 +22,7 @@ uint8_t & Field::operator () (uint8_t x, uint8_t y) {
 
 void Field::set(Figure * f) {
     for (figure_t::iterator it = f->coords.begin(); it != f->coords.end(); ++it) {
-        (*this)(it->x + f->pos.x, it->y + f->pos.y) = 1;
+        (*this)(it->x + f->pos.x, it->y + f->pos.y) = f->color + 1;
     }
 }
 
@@ -50,7 +50,8 @@ void Field::clear_line(uint8_t index) {
 bool Field::check_line(uint8_t index) {
     uint8_t filled = 0;
     for (uint8_t x = 0; x < _width; ++x) {
-        filled += (*this)(x, index);
+        uint8_t value = 1 ? (*this)(x, index) > 0 : 0;
+        filled += value;
     }
     return filled == _width;
 }
@@ -68,11 +69,9 @@ void Field::clear() {
     }
 }
 
-void Figure::set(uint8_t figure, uint8_t angle, uint8_t w, uint8_t h) {
-    if (angle > angle_max) {
-        throw std::invalid_argument("invalid figure angle");
-    }
+void Figure::set(uint8_t figure, uint8_t c, uint8_t w, uint8_t h) {
     x_max = y_max = 0;
+    color = c;
     coords.clear();
     switch (figure) {
         case FIGURE_I:
@@ -159,8 +158,8 @@ void Figure::rotate(bool direction) {
 
 void Tetris::gameover() {
     field.clear();
-    curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height() - 1);
-    next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height() - 1);
+    curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % max_color + 1, field.width(), field.height() - 1);
+    next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % max_color + 1, field.width(), field.height() - 1);
 }
 
 void Tetris::move(uint8_t direction) {
@@ -200,6 +199,7 @@ void Tetris::move(uint8_t direction) {
             }
             curr.pos.y = t.pos.y + 1;
             set_flag = true;
+            time_to_set = 0;
             break;
         }
         case ROTATE_LEFT:
@@ -244,7 +244,7 @@ void Tetris::move(uint8_t direction) {
             return;
         }
          curr = next;
-         next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % (ANGLE_270 + 1), field.width(), field.height() - 1);
+         next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % max_color + 1, field.width(), field.height() - 1);
          // очистка заполненных ячеек поля
          for (int index = field.height() - 1; index >= 1; --index) {
              // здесь можно запилить подсчёт очков
@@ -263,45 +263,40 @@ void Tetris::move(uint8_t direction) {
     }
 }
 
-Tetris::Tetris() {
+Tetris::Tetris(SDL_Renderer * r) {
+    tile = IMG_LoadTexture(r, "../resources/tetris_block.png");
     gameover();
 }
 
-void draw_box(SDL_Renderer * r, int8_t x, int8_t y) {
-    const uint8_t LINES_COUNT = 5;
-    SDL_Rect box = { x * tile_size + tile_shift, y * tile_size + tile_shift,
-                     tile_size - tile_shift, tile_size - tile_shift };
-    SDL_Point border[LINES_COUNT] = {
-        {x * tile_size, y * tile_size},
-        {(x + 1) * tile_size, y * tile_size},
-        {(x + 1) * tile_size, (y + 1) * tile_size},
-        {x * tile_size, (y + 1) * tile_size},
-        {x * tile_size, y * tile_size}
-    };
-    SDL_RenderFillRect(r, &box);
-    SDL_RenderDrawLines(r, border, LINES_COUNT);
+Tetris::~Tetris() {
+    SDL_DestroyTexture(tile);
+}
+
+void draw_box(SDL_Renderer * r, SDL_Texture * tex, int8_t x, int8_t y, uint8_t id) {
+    SDL_Rect wnd = { id * tile_size, 0, 16, 16 };
+    SDL_Rect pos = { x * tile_size, y * tile_size, 16, 16 };
+    SDL_RenderCopy( r, tex, &wnd, &pos );
 }
 
 void Tetris::render(SDL_Renderer * r) {
     const int8_t next_figure_shift = field.width() + 1;
 
-    SDL_SetRenderDrawColor(r, 255, 255, 255, SDL_ALPHA_OPAQUE);
     // сдвигаем точку отчёта для оси y для человеческой отрисовки
     // рисуем текущую фигуру на поле
     for (figure_t::iterator it = curr.coords.begin(); it != curr.coords.end(); ++it) {
-        draw_box(r, it->x + curr.pos.x, field.height() - (it->y + curr.pos.y) - 1);
+        draw_box(r, tile, it->x + curr.pos.x, field.height() - (it->y + curr.pos.y) - 1, curr.color);
     }
     // следующая фигура
     for (figure_t::iterator it = next.coords.begin(); it != next.coords.end(); ++it) {
-        draw_box(r, it->x + next_figure_shift, next.y_max - it->y + 1);
+        draw_box(r, tile, it->x + next_figure_shift, next.y_max - it->y + 1, next.color);
     }
     // рисуем игровое поле
     for (int8_t y = 0; y < field.height(); ++y) {
         for (int8_t x = 0; x < field.width(); ++x) {
-            if (field(x, y) > 0) {
-                draw_box(r, x, field.height() - y - 1);
+            uint8_t tile_type = field(x, y);
+            if (tile_type > 0) {
+                draw_box(r, tile, x, field.height() - y - 1, tile_type - 1);
             }
         }
     }
-    SDL_SetRenderDrawColor(r, 0, 0, 0, SDL_ALPHA_OPAQUE);
 }
