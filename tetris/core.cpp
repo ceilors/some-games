@@ -3,7 +3,6 @@
 // simple random
 static uint8_t y8 = (uint8_t)time(NULL);
 
-static uint8_t max_color = 3;
 static uint8_t tile_size = 16;
 
 uint8_t xorshift8(void) {
@@ -69,9 +68,9 @@ void Field::clear() {
     }
 }
 
-void Figure::set(uint8_t figure, uint8_t c, uint8_t w, uint8_t h) {
+void Figure::set(uint8_t figure, uint8_t w, uint8_t h) {
     x_max = y_max = 0;
-    color = c;
+    color = figure + 1;
     coords.clear();
     switch (figure) {
         case FIGURE_I:
@@ -158,8 +157,8 @@ void Figure::rotate(bool direction) {
 
 void Tetris::gameover() {
     field.clear();
-    curr.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % max_color + 1, field.width(), field.height() - 1);
-    next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % max_color + 1, field.width(), field.height() - 1);
+    curr.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
+    next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
 }
 
 void Tetris::move(uint8_t direction) {
@@ -244,7 +243,7 @@ void Tetris::move(uint8_t direction) {
             return;
         }
          curr = next;
-         next.set(xorshift8() % (FIGURE_Z + 1), xorshift8() % max_color + 1, field.width(), field.height() - 1);
+         next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
          // очистка заполненных ячеек поля
          for (int index = field.height() - 1; index >= 1; --index) {
              // здесь можно запилить подсчёт очков
@@ -273,8 +272,8 @@ Tetris::~Tetris() {
 }
 
 void draw_box(SDL_Renderer * r, SDL_Texture * tex, int8_t x, int8_t y, uint8_t id) {
-    SDL_Rect wnd = { id * tile_size, 0, 16, 16 };
-    SDL_Rect pos = { x * tile_size, y * tile_size, 16, 16 };
+    SDL_Rect wnd = { id * tile_size, 0, tile_size, tile_size };
+    SDL_Rect pos = { x * tile_size, y * tile_size, tile_size, tile_size };
     SDL_RenderCopy( r, tex, &wnd, &pos );
 }
 

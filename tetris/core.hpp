@@ -54,7 +54,7 @@ class Figure {
 public:
     Figure() : figure_max(FIGURE_Z), angle_max(ANGLE_270) {}
 
-    void set(uint8_t figure, uint8_t c, uint8_t w, uint8_t h);
+    void set(uint8_t figure, uint8_t w, uint8_t h);
     void rotate(bool direction=true);
 
     figure_t coords;
