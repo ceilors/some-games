@@ -10,7 +10,7 @@ void sdl_error_quit(const char * function) {
     exit(1);
 }
 
-int main() {
+int main(int argc, char ** argv) {
     const uint8_t update_counter_max = 30;
     uint8_t update_counter = update_counter_max;
     bool quit_flag = false;

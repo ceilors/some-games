@@ -5,7 +5,7 @@ app=tetris
 objects := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 all: $(objects)
-	$(CC) $(LFLAGS) $(objects) -o $(app)
+	$(CC) $(objects) $(LFLAGS) -o $(app)
 $(objects): %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 clean:
