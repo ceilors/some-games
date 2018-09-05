@@ -38,6 +38,14 @@ def draw_tile(img, xp, yp, index, size=tile_size):
     surface.blit(img, (xp * size, yp * size), tile_rect)
 
 
+def in_list(arr, value):
+    try:
+        arr.index(value)
+        return True
+    except ValueError:
+        return False
+
+
 def do_move(player, field, boxes):
     directions = {
         TI_PLAYER_UP: (0, -1),
@@ -50,7 +58,7 @@ def do_move(player, field, boxes):
     if [p_x, p_y] in boxes:
         np_x = p_x + p_dir[0]
         np_y = p_y + p_dir[1]
-        if field[np_y][np_x] != TI_WALL:
+        if field[np_y][np_x] != TI_WALL and not in_list(boxes, [np_x, np_y]):
             player[0] = p_x
             player[1] = p_y
             boxes[boxes.index([p_x, p_y])] = [np_x, np_y]
