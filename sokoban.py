@@ -34,7 +34,34 @@ CWD = Path(os.path.dirname(os.path.abspath(__file__)))
 
 def draw_tile(img, xp, yp, index, size=tile_size):
     tile_rect = (size * index, 0, size, size)
-    surface.blit(img, (x * size, yp * size), tile_rect)
+    surface.blit(img, (xp * size, yp * size), tile_rect)
+
+
+def do_move(player, field, boxes):
+    directions = {
+        TI_PLAYER_UP: (0, -1),
+        TI_PLAYER_DOWN: (0, 1),
+        TI_PLAYER_LEFT: (-1, 0),
+        TI_PLAYER_RIGHT: (1, 0)
+    }
+    p_dir = directions[player[2]]
+    p_x, p_y = player[0] + p_dir[0], player[1] + p_dir[1]
+    if [p_x, p_y] in boxes:
+        np_x = p_x + p_dir[0]
+        np_y = p_y + p_dir[1]
+        if field[np_y][np_x] != TI_WALL:
+            player[0] = p_x
+            player[1] = p_y
+            boxes[boxes.index([p_x, p_y])] = [np_x, np_y]
+    elif field[p_y][p_x] != TI_WALL:
+        player[0] = p_x
+        player[1] = p_y
+
+
+def level_clear(boxes, targets):
+    boxes = set(tuple(x) for x in boxes)
+    targets = set(tuple(x) for x in targets)
+    return not bool((targets - boxes))
 
 
 if __name__ == '__main__':
@@ -61,13 +88,14 @@ if __name__ == '__main__':
         for y, line in enumerate(field):
             for x, value in enumerate(line):
                 draw_tile(tiles, x, y, value)
-        # boxes
-        for x, y in boxes:
-            draw_tile(tiles, x, y, TI_BOX)
 
         # targets
         for x, y in targets:
             draw_tile(tiles, x, y, TI_TARGET)
+
+        # boxes
+        for x, y in boxes:
+            draw_tile(tiles, x, y, TI_BOX)
 
         # player
         draw_tile(tiles, *player)
@@ -84,11 +112,23 @@ if __name__ == '__main__':
                     quit_flag = True
                 if event.key == pygame.K_UP:
                     player[2] = TI_PLAYER_UP
+                    do_move(player, field, boxes)
                 if event.key == pygame.K_DOWN:
                     player[2] = TI_PLAYER_DOWN
+                    do_move(player, field, boxes)
                 if event.key == pygame.K_LEFT:
                     player[2] = TI_PLAYER_LEFT
+                    do_move(player, field, boxes)
                 if event.key == pygame.K_RIGHT:
                     player[2] = TI_PLAYER_RIGHT
+                    do_move(player, field, boxes)
+
+        if level_clear(boxes, targets):
+            print('LEVEL COMPLETE')
+            game = js.load(open(CWD / 'resources' / 'sokoban_levels.json'))
+            field = game[level]['field']
+            player = [*game[level]['player'], TI_PLAYER_UP]
+            boxes = game[level]['boxes']
+            targets = game[level]['targets']
 
         clock.tick(game_clock)
