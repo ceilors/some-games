@@ -75,12 +75,6 @@ def level_clear(boxes, targets):
 
 if __name__ == '__main__':
     pygame.init()
-    screen = pygame.display.set_mode(window_size)
-    pygame.display.set_caption('Sokoban')
-    clock = pygame.time.Clock()
-
-    surface = pygame.Surface(window_size)
-    surface.fill(background_color)
 
     tiles = pygame.image.load(str(CWD / 'resources' / 'sokoban.png'))
     game = js.load(open(CWD / 'resources' / 'sokoban_levels.json'))
@@ -89,6 +83,13 @@ if __name__ == '__main__':
     player = [*game[str(level)]['player'], TI_PLAYER_UP]
     boxes = game[str(level)]['boxes']
     targets = game[str(level)]['targets']
+
+    screen = pygame.display.set_mode(window_size)
+    pygame.display.set_caption('Sokoban')
+    clock = pygame.time.Clock()
+
+    surface = pygame.Surface(window_size)
+    surface.fill(background_color)
 
     while not quit_flag:
         surface.fill(background_color)
@@ -140,6 +141,13 @@ if __name__ == '__main__':
                 player = [*game[str(level)]['player'], TI_PLAYER_UP]
                 boxes = game[str(level)]['boxes']
                 targets = game[str(level)]['targets']
+
+                new_pole_size = (len(field[0]), len(field))
+                if new_pole_size != pole_size:
+                    pole_size = new_pole_size
+                    window_size = (pole_size[0] * tile_size, pole_size[1] * tile_size)
+                    screen = pygame.display.set_mode(window_size)
+                    surface = pygame.Surface(window_size)
             else:
                 print('GAME END')
                 end_flag = True
