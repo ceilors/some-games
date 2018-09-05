@@ -12,6 +12,7 @@ level = 1
 
 game_clock = 30
 quit_flag = False
+end_flag = False
 window_size = (tile_size * pole_size[0], tile_size * pole_size[1])
 
 # mouse pressed key
@@ -123,16 +124,16 @@ if __name__ == '__main__':
                     player[2] = TI_PLAYER_RIGHT
                     do_move(player, field, boxes)
 
-        if level_clear(boxes, targets):
+        if level_clear(boxes, targets) and not end_flag:
             level += 1
             if game.get(str(level)):
-                print('LEVEL COMPLETE')
+                print(f'LEVEL {level-1} COMPLETE')
                 field = game[str(level)]['field']
                 player = [*game[str(level)]['player'], TI_PLAYER_UP]
                 boxes = game[str(level)]['boxes']
                 targets = game[str(level)]['targets']
             else:
                 print('GAME END')
-                exit()
+                end_flag = True
 
         clock.tick(game_clock)
