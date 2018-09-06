@@ -11,6 +11,15 @@ uint8_t xorshift8(void) {
     return y8 ^= (y8 << 3);
 }
 
+point find_phantom(Field field, Figure curr) {
+    Figure t = curr;
+    while (!field.intersect(&t)) {
+        t.pos.y--;
+    }
+    curr.pos.y = t.pos.y + 1;
+    return curr.pos;
+}
+
 uint8_t & Field::operator () (uint8_t x, uint8_t y) {
     if (x < _width && y < _height) {
         return field[y * _width + x];
@@ -192,11 +201,7 @@ void Tetris::move(uint8_t direction) {
             break;
         }
         case MOVE_HARD_DOWN: {
-            Figure t = curr;
-            while (!field.intersect(&t)) {
-                t.pos.y--;
-            }
-            curr.pos.y = t.pos.y + 1;
+            curr.pos = find_phantom(field, curr);
             set_flag = true;
             time_to_set = 0;
             break;
@@ -277,6 +282,20 @@ void draw_box(SDL_Renderer * r, SDL_Texture * tex, int8_t x, int8_t y, uint8_t i
     SDL_RenderCopy( r, tex, &wnd, &pos );
 }
 
+void draw_frame(SDL_Renderer * r, point * pos, figure_t * coords, Field * field) {
+    std::vector<SDL_Rect> rects;
+    for (figure_t::iterator it = coords->begin(); it != coords->end(); ++it) {
+        SDL_Rect f = {
+            (it->x + pos->x) * tile_size, (field->height() - (it->y + pos->y) - 1) * tile_size,
+            tile_size, tile_size
+        };
+        rects.push_back(f);
+    }
+    SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
+    SDL_RenderDrawRects(r, rects.data(), rects.size());
+    SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
+}
+
 void Tetris::render(SDL_Renderer * r) {
     const int8_t next_figure_shift = field.width() + 1;
 
@@ -285,6 +304,9 @@ void Tetris::render(SDL_Renderer * r) {
     for (figure_t::iterator it = curr.coords.begin(); it != curr.coords.end(); ++it) {
         draw_box(r, tile, it->x + curr.pos.x, field.height() - (it->y + curr.pos.y) - 1, curr.color);
     }
+    point phantom = find_phantom(field, curr);
+    // рисуем предпологаемое место фигуры на дне стакана
+    draw_frame(r, &phantom, &(curr.coords), &field);
     // следующая фигура
     for (figure_t::iterator it = next.coords.begin(); it != next.coords.end(); ++it) {
         draw_box(r, tile, it->x + next_figure_shift, next.y_max - it->y + 1, next.color);

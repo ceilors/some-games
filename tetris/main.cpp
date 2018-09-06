@@ -80,4 +80,5 @@ int main(int argc, char ** argv) {
     SDL_DestroyRenderer(render);
     SDL_DestroyWindow(wnd);
     SDL_Quit();
+    return EXIT_SUCCESS;
 }
