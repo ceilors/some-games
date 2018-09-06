@@ -3,7 +3,7 @@
 #include "core.hpp"
 
 const uint16_t WINDOW_WIDTH = 18 * 16;
-const uint16_t WINDOW_HEIGHT = 16 * 16;
+const uint16_t WINDOW_HEIGHT = 21 * 16;
 
 void sdl_error_quit(const char * function) {
     std::cout << function << " error:" << SDL_GetError() << std::endl;

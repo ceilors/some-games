@@ -5,6 +5,8 @@ static uint8_t y8 = (uint8_t)time(NULL);
 
 static uint8_t tile_size = 16;
 
+const uint16_t score_table[5] = {0, 100, 300, 700, 1500};
+
 uint8_t xorshift8(void) {
     y8 ^= (y8 << 7);
     y8 ^= (y8 >> 5);
@@ -165,6 +167,17 @@ void Figure::rotate(bool direction) {
 }
 
 void Tetris::gameover() {
+    // game consts
+    update_counter_max = 50;
+    time_to_set_default = 40;
+    // game timer
+    time_to_set = time_to_set_default;
+    update_counter = update_counter_max;
+    // game info
+    game_score = 0;
+    game_speed = 1;
+    game_lines = 0;
+
     field.clear();
     curr.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
     next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
@@ -206,7 +219,10 @@ void Tetris::move(uint8_t direction, bool delay) {
             break;
         }
         case MOVE_HARD_DOWN: {
-            curr.pos = find_phantom(field, curr);
+            point new_pos = find_phantom(field, curr);
+            // очки за быстрый спуск
+            game_score += (curr.pos.y - new_pos.y);
+            curr.pos = new_pos;
             set_flag = true;
             break;
         }
@@ -252,15 +268,27 @@ void Tetris::move(uint8_t direction, bool delay) {
             gameover();
             return;
         }
+        // очки за установку фигуры на поле
+        game_score += curr.coords.size();
         curr = next;
         next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
         // очистка заполненных ячеек поля
+        uint8_t lines_count = 0;
         for (int index = field.height() - 1; index >= 1; --index) {
             // здесь можно запилить подсчёт очков
             if (field.check_line((uint8_t)index)) {
                 field.clear_line((uint8_t)index);
+                lines_count++;
             }
         }
+        // очки за удаление линий
+        game_score += score_table[lines_count];
+        if ((game_lines + lines_count) / 10 - game_lines / 10 == 1) {
+            update_counter_max -= 4;
+            time_to_set_default += 2;
+            game_speed += 1;
+        }
+        game_lines += lines_count;
         // проверяем что фигуре ничего не мешает
         if (field.intersect(&curr)) {
             std::cout << "gameover" << std::endl;
@@ -273,16 +301,6 @@ void Tetris::move(uint8_t direction, bool delay) {
 }
 
 Tetris::Tetris(SDL_Renderer * r) {
-    // game consts
-    update_counter_max = 50;
-    time_to_set_default = 40;
-    // game timer
-    time_to_set = time_to_set_default;
-    update_counter = update_counter_max;
-    // game info
-    game_score = 0;
-    game_speed = 1;
-
     if (TTF_Init() != 0) {
         std::cout << "TTF_Init error:" << TTF_GetError() << std::endl;
         exit(1);
@@ -364,11 +382,13 @@ void Tetris::render(SDL_Renderer * r, bool pause) {
             draw_box(r, tile, it->x + next_figure_shift, next.y_max - it->y + 1, next.color);
         }
     } else {
-        draw_text(r, font, "paused", next_figure_shift * tile_size, 10 * tile_size, clr_white);
+        draw_text(r, font, "paused", next_figure_shift * tile_size, 13 * tile_size, clr_white);
     }
     draw_text(r, font, "next", next_figure_shift * tile_size, 0, clr_white);
     draw_text(r, font, "score", next_figure_shift * tile_size, 4 * tile_size, clr_white);
     draw_text(r, font, game_score, next_figure_shift * tile_size, 5 * tile_size, clr_white);
-    draw_text(r, font, "speed", next_figure_shift * tile_size, 7 * tile_size, clr_white);
-    draw_text(r, font, game_speed, next_figure_shift * tile_size, 8 * tile_size, clr_white);
+    draw_text(r, font, "lines", next_figure_shift * tile_size, 7 * tile_size, clr_white);
+    draw_text(r, font, game_lines, next_figure_shift * tile_size, 8 * tile_size, clr_white);
+    draw_text(r, font, "speed", next_figure_shift * tile_size, 10 * tile_size, clr_white);
+    draw_text(r, font, game_speed, next_figure_shift * tile_size, 11 * tile_size, clr_white);
 }

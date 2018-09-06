@@ -73,7 +73,7 @@ class Field {
     const uint8_t _height;
     std::vector<uint8_t> field;
 public:
-    Field(uint8_t width=10, uint8_t height=15): _width(width + 2), _height(height + 1), field(_width * _height) {}
+    Field(uint8_t width=10, uint8_t height=20): _width(width + 2), _height(height + 1), field(_width * _height) {}
 
     void set(Figure * f);
     void clear();
@@ -95,6 +95,7 @@ class Tetris {
     TTF_Font * font;
     uint8_t game_speed;
     uint32_t game_score;
+    uint32_t game_lines;
     uint16_t update_counter_max;
     uint16_t time_to_set_default;
     int16_t time_to_set;
