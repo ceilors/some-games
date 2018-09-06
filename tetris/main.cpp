@@ -2,8 +2,8 @@
 #include <SDL2/SDL.h>
 #include "core.hpp"
 
-const uint16_t WINDOW_WIDTH = 500;
-const uint16_t WINDOW_HEIGHT = 500;
+const uint16_t WINDOW_WIDTH = 18 * 16;
+const uint16_t WINDOW_HEIGHT = 16 * 16;
 
 void sdl_error_quit(const char * function) {
     std::cout << function << " error:" << SDL_GetError() << std::endl;
@@ -11,9 +11,8 @@ void sdl_error_quit(const char * function) {
 }
 
 int main(int argc, char ** argv) {
-    const uint8_t update_counter_max = 30;
-    uint8_t update_counter = update_counter_max;
     bool quit_flag = false;
+    bool pause_flag = true;
     SDL_Event event;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -41,23 +40,38 @@ int main(int argc, char ** argv) {
                         case SDLK_ESCAPE:
                             quit_flag = true;
                             break;
+                        case SDLK_SPACE:
+                            pause_flag = !pause_flag;
+                            break;
                         case SDLK_w:
-                            tetris.move(MOVE_HARD_DOWN);
+                            if (!pause_flag) {
+                                tetris.move(MOVE_HARD_DOWN);
+                            }
                             break;
                         case SDLK_s:
-                            tetris.move(MOVE_SOFT_DOWN);
+                            if (!pause_flag) {
+                                tetris.move(MOVE_SOFT_DOWN);
+                            }
                             break;
                         case SDLK_a:
-                            tetris.move(MOVE_LEFT);
+                            if (!pause_flag) {
+                                tetris.move(MOVE_LEFT);
+                            }
                             break;
                         case SDLK_d:
-                            tetris.move(MOVE_RIGHT);
+                            if (!pause_flag) {
+                                tetris.move(MOVE_RIGHT);
+                            }
                             break;
                         case SDLK_g:
-                            tetris.move(ROTATE_LEFT);
+                            if (!pause_flag) {
+                                tetris.move(ROTATE_LEFT);
+                            }
                             break;
                         case SDLK_h:
-                            tetris.move(ROTATE_RIGHT);
+                            if (!pause_flag) {
+                                tetris.move(ROTATE_RIGHT);
+                            }
                             break;
                         default:
                             break;
@@ -68,13 +82,10 @@ int main(int argc, char ** argv) {
             }
         }
         SDL_RenderClear(render);
-        tetris.render(render);
+        tetris.render(render, pause_flag);
         SDL_RenderPresent(render);
-        if (update_counter == 0) {
-            tetris.move(MOVE_SOFT_DOWN);
-            update_counter = update_counter_max;
-        } else {
-            update_counter--;
+        if (!pause_flag) {
+            tetris.move(MOVE_SOFT_DOWN, true);
         }
     }
     SDL_DestroyRenderer(render);

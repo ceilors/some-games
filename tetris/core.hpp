@@ -1,14 +1,16 @@
 #pragma once
+#include <ctime>
 #include <iostream>
 #include <stdexcept>
 #include <stdint.h>
+#include <sstream>
 #include <utility>
 #include <vector>
-#include <ctime>
 
 // SDL2
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 /* 
 для enum'мов не менять нумерацию
@@ -90,11 +92,18 @@ class Tetris {
     Figure next;
     Field field;
     SDL_Texture * tile;
+    TTF_Font * font;
+    uint8_t game_speed;
+    uint32_t game_score;
+    uint16_t update_counter_max;
+    uint16_t time_to_set_default;
+    int16_t time_to_set;
+    int16_t update_counter;
 public:
     Tetris(SDL_Renderer * r);
     ~Tetris();
     void gameover();
     void step();
-    void move(uint8_t direction);
-    void render(SDL_Renderer * r);
+    void move(uint8_t direction, bool delay=false);
+    void render(SDL_Renderer * r, bool pause);
 };

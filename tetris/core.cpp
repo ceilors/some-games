@@ -170,12 +170,17 @@ void Tetris::gameover() {
     next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
 }
 
-void Tetris::move(uint8_t direction) {
-    const uint8_t time_to_set_default = 2;
-    static uint8_t time_to_set = time_to_set_default;
+void Tetris::move(uint8_t direction, bool delay) {
     point _shifts[] = {point(-1, 0), point(1, 0), point(0, -1), point(0, 1)};
     figure_t shifts(_shifts, _shifts+4);
-    bool set_flag = false;
+    static bool set_flag = false;
+
+    if (update_counter <= 0 || !delay || set_flag) {
+        update_counter = update_counter_max;
+    } else {
+        update_counter--;
+        return;
+    }
 
     switch (direction) {
         case MOVE_LEFT: {
@@ -203,7 +208,6 @@ void Tetris::move(uint8_t direction) {
         case MOVE_HARD_DOWN: {
             curr.pos = find_phantom(field, curr);
             set_flag = true;
-            time_to_set = 0;
             break;
         }
         case ROTATE_LEFT:
@@ -238,7 +242,8 @@ void Tetris::move(uint8_t direction) {
         default:
             throw std::invalid_argument("invalid figure action");
     }
-    if (set_flag && time_to_set == 0) {
+    if (set_flag && time_to_set <= 0) {
+        set_flag = false;
         time_to_set = time_to_set_default;
         try {
             field.set(&curr);
@@ -247,33 +252,51 @@ void Tetris::move(uint8_t direction) {
             gameover();
             return;
         }
-         curr = next;
-         next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
-         // очистка заполненных ячеек поля
-         for (int index = field.height() - 1; index >= 1; --index) {
-             // здесь можно запилить подсчёт очков
-             if (field.check_line((uint8_t)index)) {
-                 field.clear_line((uint8_t)index);
-             }
-         }
-         // проверяем что фигуре ничего не мешает
-         if (field.intersect(&curr)) {
+        curr = next;
+        next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
+        // очистка заполненных ячеек поля
+        for (int index = field.height() - 1; index >= 1; --index) {
+            // здесь можно запилить подсчёт очков
+            if (field.check_line((uint8_t)index)) {
+                field.clear_line((uint8_t)index);
+            }
+        }
+        // проверяем что фигуре ничего не мешает
+        if (field.intersect(&curr)) {
             std::cout << "gameover" << std::endl;
             gameover();
             return;
-         }
+        }
     } else if (set_flag) {
         time_to_set--;
     }
 }
 
 Tetris::Tetris(SDL_Renderer * r) {
+    // game consts
+    update_counter_max = 50;
+    time_to_set_default = 40;
+    // game timer
+    time_to_set = time_to_set_default;
+    update_counter = update_counter_max;
+    // game info
+    game_score = 0;
+    game_speed = 1;
+
+    if (TTF_Init() != 0) {
+        std::cout << "TTF_Init error:" << TTF_GetError() << std::endl;
+        exit(1);
+    }
+
     tile = IMG_LoadTexture(r, "../resources/tetris_block.png");
+    font = TTF_OpenFont("../resources/FiraMono-Regular.ttf", 12);
     gameover();
 }
 
 Tetris::~Tetris() {
     SDL_DestroyTexture(tile);
+    TTF_CloseFont(font);
+    TTF_Quit();
 }
 
 void draw_box(SDL_Renderer * r, SDL_Texture * tex, int8_t x, int8_t y, uint8_t id) {
@@ -296,28 +319,56 @@ void draw_frame(SDL_Renderer * r, point * pos, figure_t * coords, Field * field)
     SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
 }
 
-void Tetris::render(SDL_Renderer * r) {
-    const int8_t next_figure_shift = field.width() + 1;
+void draw_text(SDL_Renderer * r, TTF_Font * font, const char * text, uint16_t x, uint16_t y, SDL_Color color) {
+    SDL_Surface * f_surface = TTF_RenderText_Blended(font, text, color);
+    SDL_Texture * f_texture = SDL_CreateTextureFromSurface(r, f_surface);
+    SDL_Rect text_rect = {0, 0, 0, 0};
+    SDL_Rect wnd_rect = {x, y, 0, 0};
+    SDL_QueryTexture(f_texture, NULL, NULL, &text_rect.w, &text_rect.h);
+    wnd_rect.w = text_rect.w;
+    wnd_rect.h = text_rect.h;
+    SDL_RenderCopy(r, f_texture, &text_rect, &wnd_rect);
+    SDL_DestroyTexture(f_texture);
+}
 
-    // сдвигаем точку отчёта для оси y для человеческой отрисовки
-    // рисуем текущую фигуру на поле
-    for (figure_t::iterator it = curr.coords.begin(); it != curr.coords.end(); ++it) {
-        draw_box(r, tile, it->x + curr.pos.x, field.height() - (it->y + curr.pos.y) - 1, curr.color);
-    }
-    point phantom = find_phantom(field, curr);
-    // рисуем предпологаемое место фигуры на дне стакана
-    draw_frame(r, &phantom, &(curr.coords), &field);
-    // следующая фигура
-    for (figure_t::iterator it = next.coords.begin(); it != next.coords.end(); ++it) {
-        draw_box(r, tile, it->x + next_figure_shift, next.y_max - it->y + 1, next.color);
-    }
-    // рисуем игровое поле
-    for (int8_t y = 0; y < field.height(); ++y) {
-        for (int8_t x = 0; x < field.width(); ++x) {
-            uint8_t tile_type = field(x, y);
-            if (tile_type > 0) {
-                draw_box(r, tile, x, field.height() - y - 1, tile_type - 1);
+void draw_text(SDL_Renderer * r, TTF_Font * font, int value, uint16_t x, uint16_t y, SDL_Color color) {
+    std::ostringstream buffer;
+    buffer << value;
+    draw_text(r, font, buffer.str().c_str(), x, y, color);
+}
+
+void Tetris::render(SDL_Renderer * r, bool pause) {
+    const int8_t next_figure_shift = field.width() + 1;
+    const SDL_Color clr_white = {255, 255, 255, 255};
+
+    if (!pause) {
+        // рисуем игровое поле
+        for (int8_t y = 0; y < field.height(); ++y) {
+            for (int8_t x = 0; x < field.width(); ++x) {
+                uint8_t tile_type = field(x, y);
+                if (tile_type > 0) {
+                    draw_box(r, tile, x, field.height() - y - 1, tile_type - 1);
+                }
             }
         }
+        // сдвигаем точку отчёта для оси y для человеческой отрисовки
+        // рисуем текущую фигуру на поле
+        for (figure_t::iterator it = curr.coords.begin(); it != curr.coords.end(); ++it) {
+            draw_box(r, tile, it->x + curr.pos.x, field.height() - (it->y + curr.pos.y) - 1, curr.color);
+        }
+        point phantom = find_phantom(field, curr);
+        // рисуем предпологаемое место фигуры на дне стакана
+        draw_frame(r, &phantom, &(curr.coords), &field);
+        // следующая фигура
+        for (figure_t::iterator it = next.coords.begin(); it != next.coords.end(); ++it) {
+            draw_box(r, tile, it->x + next_figure_shift, next.y_max - it->y + 1, next.color);
+        }
+    } else {
+        draw_text(r, font, "paused", next_figure_shift * tile_size, 10 * tile_size, clr_white);
     }
+    draw_text(r, font, "next", next_figure_shift * tile_size, 0, clr_white);
+    draw_text(r, font, "score", next_figure_shift * tile_size, 4 * tile_size, clr_white);
+    draw_text(r, font, game_score, next_figure_shift * tile_size, 5 * tile_size, clr_white);
+    draw_text(r, font, "speed", next_figure_shift * tile_size, 7 * tile_size, clr_white);
+    draw_text(r, font, game_speed, next_figure_shift * tile_size, 8 * tile_size, clr_white);
 }
