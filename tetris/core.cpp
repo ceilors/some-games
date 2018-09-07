@@ -189,13 +189,6 @@ void Tetris::move(uint8_t direction, bool delay) {
     figure_t shifts(_shifts, _shifts+4);
     static bool set_flag = false;
 
-    if (update_counter <= 0 || !delay || set_flag) {
-        update_counter = update_counter_max;
-    } else {
-        update_counter--;
-        return;
-    }
-
     switch (direction) {
         case MOVE_LEFT: {
             curr.pos.x--;
@@ -212,6 +205,14 @@ void Tetris::move(uint8_t direction, bool delay) {
             break;
         }
         case MOVE_SOFT_DOWN: {
+            // задержка для регулирования скорости игры
+            if (update_counter <= 0 || !delay || set_flag) {
+                update_counter = update_counter_max;
+            } else {
+                update_counter--;
+                return;
+            }
+            
             curr.pos.y--;
             if (field.intersect(&curr)) {
                 curr.pos.y++;
