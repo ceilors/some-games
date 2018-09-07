@@ -2,8 +2,8 @@
 #include <SDL2/SDL.h>
 #include "core.hpp"
 
-const uint16_t WINDOW_WIDTH = 18 * 16;
-const uint16_t WINDOW_HEIGHT = 21 * 16;
+const uint16_t WINDOW_WIDTH = 100;
+const uint16_t WINDOW_HEIGHT = 100;
 
 void sdl_error_quit(const char * function) {
     std::cout << function << " error:" << SDL_GetError() << std::endl;
@@ -28,6 +28,8 @@ int main(int argc, char ** argv) {
         sdl_error_quit("SDL_CreateRenderer");
     }
     Tetris tetris = Tetris(render);
+    SDL_SetWindowSize(wnd, tetris.w_width, tetris.w_height);
+
     while (!quit_flag) {
         while (SDL_PollEvent(&event) != 0) {
             switch (event.type) {

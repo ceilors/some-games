@@ -107,4 +107,7 @@ public:
     void step();
     void move(uint8_t direction, bool delay=false);
     void render(SDL_Renderer * r, bool pause);
+
+    uint32_t w_width;
+    uint32_t w_height;
 };

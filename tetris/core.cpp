@@ -5,6 +5,7 @@ static uint8_t y8 = (uint8_t)time(NULL);
 
 static uint8_t tile_size = 16;
 
+const uint8_t next_figure_blocks_count = 6;
 const uint16_t score_table[5] = {0, 100, 300, 700, 1500};
 
 uint8_t xorshift8(void) {
@@ -285,7 +286,7 @@ void Tetris::move(uint8_t direction, bool delay) {
         game_score += score_table[lines_count];
         if ((game_lines + lines_count) / 10 - game_lines / 10 == 1) {
             update_counter_max -= 4;
-            time_to_set_default += 2;
+            time_to_set_default += 3;
             game_speed += 1;
         }
         game_lines += lines_count;
@@ -307,8 +308,16 @@ Tetris::Tetris(SDL_Renderer * r) {
     }
 
     tile = IMG_LoadTexture(r, "../resources/tetris_block.png");
+    int tile_height = 16;
+    SDL_QueryTexture(tile, NULL, NULL, NULL, &tile_height);
+    tile_size = (uint8_t) tile_height;
+
     font = TTF_OpenFont("../resources/FiraMono-Regular.ttf", 12);
+    
     gameover();
+
+    w_width = (field.width() + next_figure_blocks_count) * tile_size;
+    w_height = field.height() * tile_size;
 }
 
 Tetris::~Tetris() {
