@@ -29,6 +29,7 @@ int main(int argc, char ** argv) {
     }
     Tetris tetris = Tetris(render);
     SDL_SetWindowSize(wnd, tetris.w_width, tetris.w_height);
+    SDL_SetWindowPosition(wnd, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
     while (!quit_flag) {
         while (SDL_PollEvent(&event) != 0) {
