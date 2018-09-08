@@ -40,7 +40,8 @@ enum GameControl {
     MOVE_SOFT_DOWN = 2,
     MOVE_HARD_DOWN = 3,
     ROTATE_LEFT = 4,
-    ROTATE_RIGHT = 5
+    ROTATE_RIGHT = 5,
+    PAUSE_STATE = 6
 };
 
 struct point {
@@ -93,20 +94,26 @@ class Tetris {
     Field field;
     SDL_Texture * tile;
     TTF_Font * font;
+
     uint8_t game_speed;
     uint32_t game_score;
+    uint32_t high_score;
     uint32_t game_lines;
+
     uint16_t update_counter_max;
     uint16_t time_to_set_default;
     int16_t time_to_set;
     int16_t update_counter;
+
+    bool game_over_flag;
+    bool pause_flag;
 public:
     Tetris(SDL_Renderer * r);
     ~Tetris();
     void gameover();
     void step();
     void move(uint8_t direction, bool delay=false);
-    void render(SDL_Renderer * r, bool pause);
+    void render(SDL_Renderer * r);
 
     uint32_t w_width;
     uint32_t w_height;

@@ -12,7 +12,6 @@ void sdl_error_quit(const char * function) {
 
 int main(int argc, char ** argv) {
     bool quit_flag = false;
-    bool pause_flag = true;
     SDL_Event event;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -44,37 +43,25 @@ int main(int argc, char ** argv) {
                             quit_flag = true;
                             break;
                         case SDLK_SPACE:
-                            pause_flag = !pause_flag;
+                            tetris.move(PAUSE_STATE);
                             break;
                         case SDLK_w:
-                            if (!pause_flag) {
-                                tetris.move(MOVE_HARD_DOWN);
-                            }
+                            tetris.move(MOVE_HARD_DOWN);
                             break;
                         case SDLK_s:
-                            if (!pause_flag) {
-                                tetris.move(MOVE_SOFT_DOWN);
-                            }
+                            tetris.move(MOVE_SOFT_DOWN);
                             break;
                         case SDLK_a:
-                            if (!pause_flag) {
-                                tetris.move(MOVE_LEFT);
-                            }
+                            tetris.move(MOVE_LEFT);
                             break;
                         case SDLK_d:
-                            if (!pause_flag) {
-                                tetris.move(MOVE_RIGHT);
-                            }
+                            tetris.move(MOVE_RIGHT);
                             break;
                         case SDLK_g:
-                            if (!pause_flag) {
-                                tetris.move(ROTATE_LEFT);
-                            }
+                            tetris.move(ROTATE_LEFT);
                             break;
                         case SDLK_h:
-                            if (!pause_flag) {
-                                tetris.move(ROTATE_RIGHT);
-                            }
+                            tetris.move(ROTATE_RIGHT);
                             break;
                         default:
                             break;
@@ -85,11 +72,9 @@ int main(int argc, char ** argv) {
             }
         }
         SDL_RenderClear(render);
-        tetris.render(render, pause_flag);
+        tetris.render(render);
         SDL_RenderPresent(render);
-        if (!pause_flag) {
-            tetris.move(MOVE_SOFT_DOWN, true);
-        }
+        tetris.move(MOVE_SOFT_DOWN, true);
     }
     SDL_DestroyRenderer(render);
     SDL_DestroyWindow(wnd);

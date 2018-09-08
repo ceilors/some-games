@@ -174,22 +174,39 @@ void Tetris::gameover() {
     // game timer
     time_to_set = time_to_set_default;
     update_counter = update_counter_max;
+
+    high_score = std::max(game_score, high_score);
+
     // game info
     game_score = 0;
     game_speed = 1;
     game_lines = 0;
+
+    game_over_flag = false;
 
     field.clear();
     curr.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
     next.set(xorshift8() % (FIGURE_Z + 1), field.width(), field.height() - 1);
 }
 
-void Tetris::move(uint8_t direction, bool delay) {
+void Tetris::move(uint8_t state, bool delay) {
     point _shifts[] = {point(-1, 0), point(1, 0), point(0, -1), point(0, 1)};
     figure_t shifts(_shifts, _shifts+4);
     static bool set_flag = false;
 
-    switch (direction) {
+    if (state != PAUSE_STATE && pause_flag) {
+        return;
+    }
+
+    switch (state) {
+        case PAUSE_STATE: {
+            pause_flag = !pause_flag;
+            if (game_over_flag) {
+                gameover();
+            }
+            return;
+            break;
+        }
         case MOVE_LEFT: {
             curr.pos.x--;
             if (field.intersect(&curr)) {
@@ -230,7 +247,7 @@ void Tetris::move(uint8_t direction, bool delay) {
         }
         case ROTATE_LEFT:
         case ROTATE_RIGHT: {
-            bool side = true ? direction == ROTATE_LEFT : false;
+            bool side = true ? state == ROTATE_LEFT : false;
             bool ignored_all = true;
             curr.rotate(side);
             if (field.intersect(&curr)) {
@@ -260,14 +277,14 @@ void Tetris::move(uint8_t direction, bool delay) {
         default:
             throw std::invalid_argument("invalid figure action");
     }
-    if (set_flag && time_to_set <= 0) {
+    if (set_flag && time_to_set <= 0 && !game_over_flag) {
         set_flag = false;
         time_to_set = time_to_set_default;
         try {
             field.set(&curr);
         } catch (std::out_of_range &) {
-            std::cout << "gameover" << std::endl;
-            gameover();
+            game_over_flag = true;
+            pause_flag = true;
             return;
         }
         // очки за установку фигуры на поле
@@ -293,8 +310,8 @@ void Tetris::move(uint8_t direction, bool delay) {
         game_lines += lines_count;
         // проверяем что фигуре ничего не мешает
         if (field.intersect(&curr)) {
-            std::cout << "gameover" << std::endl;
-            gameover();
+            game_over_flag = true;
+            pause_flag = true;
             return;
         }
     } else if (set_flag) {
@@ -315,6 +332,8 @@ Tetris::Tetris(SDL_Renderer * r) {
 
     font = TTF_OpenFont("../resources/FiraMono-Regular.ttf", 12);
     
+    pause_flag = true;
+
     gameover();
 
     w_width = (field.width() + next_figure_blocks_count) * tile_size;
@@ -365,11 +384,11 @@ void draw_text(SDL_Renderer * r, TTF_Font * font, int value, uint16_t x, uint16_
     draw_text(r, font, buffer.str().c_str(), x, y, color);
 }
 
-void Tetris::render(SDL_Renderer * r, bool pause) {
+void Tetris::render(SDL_Renderer * r) {
     const int8_t next_figure_shift = field.width() + 1;
     const SDL_Color clr_white = {255, 255, 255, 255};
 
-    if (!pause) {
+    if (!pause_flag) {
         // рисуем игровое поле
         for (int8_t y = 0; y < field.height(); ++y) {
             for (int8_t x = 0; x < field.width(); ++x) {
@@ -392,13 +411,18 @@ void Tetris::render(SDL_Renderer * r, bool pause) {
             draw_box(r, tile, it->x + next_figure_shift, next.y_max - it->y + 1, next.color);
         }
     } else {
-        draw_text(r, font, "paused", next_figure_shift * tile_size, 13 * tile_size, clr_white);
+        draw_text(r, font, "paused", next_figure_shift * tile_size, 14 * tile_size, clr_white);
     }
     draw_text(r, font, "next", next_figure_shift * tile_size, 0, clr_white);
-    draw_text(r, font, "score", next_figure_shift * tile_size, 4 * tile_size, clr_white);
-    draw_text(r, font, game_score, next_figure_shift * tile_size, 5 * tile_size, clr_white);
-    draw_text(r, font, "lines", next_figure_shift * tile_size, 7 * tile_size, clr_white);
-    draw_text(r, font, game_lines, next_figure_shift * tile_size, 8 * tile_size, clr_white);
-    draw_text(r, font, "speed", next_figure_shift * tile_size, 10 * tile_size, clr_white);
-    draw_text(r, font, game_speed, next_figure_shift * tile_size, 11 * tile_size, clr_white);
+    draw_text(r, font, "highscore", next_figure_shift * tile_size, 4 * tile_size, clr_white);
+    draw_text(r, font, high_score, next_figure_shift * tile_size, 5 * tile_size, clr_white);
+    draw_text(r, font, "score", next_figure_shift * tile_size, 6 * tile_size, clr_white);
+    draw_text(r, font, game_score, next_figure_shift * tile_size, 7 * tile_size, clr_white);
+    draw_text(r, font, "lines", next_figure_shift * tile_size, 8 * tile_size, clr_white);
+    draw_text(r, font, game_lines, next_figure_shift * tile_size, 9 * tile_size, clr_white);
+    draw_text(r, font, "speed", next_figure_shift * tile_size, 11 * tile_size, clr_white);
+    draw_text(r, font, game_speed, next_figure_shift * tile_size, 12 * tile_size, clr_white);
+    if (game_over_flag) {
+        draw_text(r, font, "gameover", next_figure_shift * tile_size, 15 * tile_size, clr_white);
+    }
 }
