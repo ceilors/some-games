@@ -175,12 +175,11 @@ void Tetris::gameover() {
     time_to_set = time_to_set_default;
     update_counter = update_counter_max;
 
-    high_score = std::max(game_score, high_score);
-
     // game info
     game_score = 0;
     game_speed = 1;
     game_lines = 0;
+    high_score = std::max(game_score, high_score);
 
     game_over_flag = false;
 
