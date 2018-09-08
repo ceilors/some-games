@@ -333,6 +333,7 @@ Tetris::Tetris(SDL_Renderer * r) {
     font = TTF_OpenFont("../resources/FiraMono-Regular.ttf", 12);
     
     pause_flag = true;
+    high_score = 0;
 
     gameover();
 
