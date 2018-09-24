@@ -228,7 +228,7 @@ void Tetris::move(uint8_t state, bool delay) {
                 update_counter--;
                 return;
             }
-            
+
             curr.pos.y--;
             if (field.intersect(&curr)) {
                 curr.pos.y++;
@@ -330,7 +330,7 @@ Tetris::Tetris(SDL_Renderer * r) {
     tile_size = (uint8_t) tile_height;
 
     font = TTF_OpenFont("../resources/FiraMono-Regular.ttf", 12);
-    
+
     pause_flag = true;
     high_score = 0;
 
@@ -352,17 +352,44 @@ void draw_box(SDL_Renderer * r, SDL_Texture * tex, int8_t x, int8_t y, uint8_t i
     SDL_RenderCopy( r, tex, &wnd, &pos );
 }
 
+inline bool operator == (const SDL_Rect & a, const SDL_Rect & b) {
+    return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+}
+
 void draw_frame(SDL_Renderer * r, point * pos, figure_t * coords, Field * field) {
-    std::vector<SDL_Rect> rects;
+    std::vector<SDL_Rect> lines;
+
     for (figure_t::iterator it = coords->begin(); it != coords->end(); ++it) {
-        SDL_Rect f = {
-            (it->x + pos->x) * tile_size, (field->height() - (it->y + pos->y) - 1) * tile_size,
-            tile_size, tile_size
-        };
-        rects.push_back(f);
+        SDL_Point p0 = {it->x * tile_size, it->y * tile_size};
+        SDL_Point p1 = {p0.x + tile_size, p0.y};
+        SDL_Point p2 = {p1.x, p0.y + tile_size};
+        SDL_Point p3 = {p0.x, p2.y};
+
+        SDL_Rect r0 = {p0.x, p0.y, p1.x, p1.y};
+        SDL_Rect r1 = {p3.x, p3.y, p2.x, p2.y};
+        SDL_Rect r2 = {p0.x, p0.y, p3.x, p3.y};
+        SDL_Rect r3 = {p1.x, p1.y, p2.x, p2.y};
+
+        lines.push_back(r0);
+        lines.push_back(r1);
+        lines.push_back(r2);
+        lines.push_back(r3);
     }
+
     SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
-    SDL_RenderDrawRects(r, rects.data(), rects.size());
+    for (std::vector<SDL_Rect>::iterator it = lines.begin(); it != lines.end(); ++it) {
+        int count = 0;
+        for (std::vector<SDL_Rect>::iterator p = lines.begin(); p != lines.end(); ++p) {
+            if (*p == *it) {
+                count++;
+            }
+        }
+        if (count == 1) {
+            SDL_Point p1 = {pos->x * tile_size + it->x, (field->height() - pos->y) * tile_size - it->y};
+            SDL_Point p2 = {pos->x * tile_size + it->w, (field->height() - pos->y) * tile_size - it->h};
+            SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+        }
+    }
     SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
 }
 
