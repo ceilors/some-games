@@ -38,7 +38,6 @@ int main(int argc, char ** argv) {
                     break;
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
-                        case SDLK_q:
                         case SDLK_ESCAPE:
                             quit_flag = true;
                             break;
