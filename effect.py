@@ -23,8 +23,8 @@ if __name__ == '__main__':
     surface = pygame.Surface(window_size)
     surface.fill(background_color)
 
-    image = np.array(Image.open('image.png').convert('RGB')).reshape(IMG_SIZE ** 2, 3)
-    effect = np.array(Image.open('effect.png').convert('L')).reshape(IMG_SIZE ** 2)
+    image = np.array(Image.open('./resources/image.png').convert('RGB')).reshape(IMG_SIZE ** 2, 3)
+    effect = np.array(Image.open('./resources/effect.png').convert('L')).reshape(IMG_SIZE ** 2)
 
     while not quit_flag:
         surface.fill(background_color)
