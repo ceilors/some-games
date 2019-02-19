@@ -233,7 +233,14 @@ class App:
         self.remove_countdown = App.MAX_COUNTDOWN
 
         self.game_score = 0
-        self.game_highscore = 0
+        self.score_file = self.cwd / 'gamescore.txt'
+        game_score_value = 0
+        if self.score_file.exists():
+            try:
+                game_score_value = int(self.score_file.open('r').read())
+            except ValueError:
+                pass
+        self.game_highscore = game_score_value
         self.lines = None
 
     def generate_figures(self):
@@ -291,6 +298,7 @@ class App:
                     board.clear()
                     self.generate_figures()
                     self.game_highscore = max(self.game_score, self.game_highscore)
+                    self.save_game_score()
                     self.game_over = False
                     self.game_score = 0
 
@@ -330,6 +338,7 @@ class App:
                 self.remove_countdown = App.MAX_COUNTDOWN
             else:
                 self.remove_countdown -= 1
+        self.game_highscore = max(self.game_score, self.game_highscore)
 
     def on_render(self):
         # рисование подложки
@@ -372,6 +381,9 @@ class App:
 
         pygame.display.flip()
 
+    def save_game_score(self):
+        self.score_file.open('w').write(str(self.game_highscore))
+
     def on_cleanup(self):
         pygame.quit()
 
@@ -384,6 +396,7 @@ class App:
             self.on_loop()
             self.on_render()
             self.clock.tick(App.GAME_FPS)
+        self.save_game_score()
         self.on_cleanup()
 
 
