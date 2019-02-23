@@ -15,15 +15,15 @@ colors = {
     # игровое поле и шрифт
     0: (170, 170, 170),
     # фигуры
-    1: (255, 110, 110),
-    2: (255, 212, 110),
-    3: (212, 255, 110),
-    4: (110, 255, 110),
-    5: (110, 255, 212),
-    6: (110, 212, 255),
-    7: (110, 110, 255),
-    8: (212, 110, 255),
-    9: (255, 110, 212)
+    1: (230, 100, 100),
+    2: (230, 210, 100),
+    3: (210, 230, 100),
+    4: (100, 230, 100),
+    5: (100, 230, 210),
+    6: (100, 210, 230),
+    7: (100, 100, 230),
+    8: (210, 100, 230),
+    9: (230, 100, 200)
 }
 
 figures = [
@@ -70,11 +70,11 @@ game_height = TILE_SIZE * (BOARD_SIZE + MAX_BASKET_TILES + 2) + shift_pos[1]
 
 
 # gameover params
-game_over_text = 'GAME OVER'
+game_over_text = 'КОНЕЦ ИГРЫ'
 gmx, gmy = len(game_over_text) * 30, 48
 gmx_pos = ((game_width - gmx) // 2, (game_height - gmy) // 2)
-rect1 = (gmx_pos[0] - 10, gmx_pos[1], gmx + 10, gmy + 10)
-rect2 = (gmx_pos[0] - 5, gmx_pos[1] + 5, gmx, gmy)
+rect1 = (gmx_pos[0] - 10, gmx_pos[1], gmx + 15, gmy + 13)
+rect2 = (gmx_pos[0] - 5, gmx_pos[1] + 5, gmx + 5, gmy + 3)
 
 
 def remove_zeros(arr):
@@ -371,8 +371,8 @@ class App:
                             self._display_surf, rect, colors[self.basket_colors[index]])
 
         # вывод игровых очков
-        text_pos = (TILE_SIZE * (board.width + 1), shift_pos[1])
-        render_text = f'highscore\n{self.game_highscore}\nscore\n{self.game_score}'
+        text_pos = (TILE_SIZE * (board.width + 1), shift_pos[1] + 1)
+        render_text = f'набранный рекорд\n{self.game_highscore}\nтекущий счёт\n{self.game_score}'
         draw_text(self._display_surf, self.font, text_color, text_pos, 30, render_text)
         if self.game_over:
             AAfilledRoundedRect(self._display_surf, rect1, colors[1], 0.2)
