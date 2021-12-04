@@ -65,8 +65,8 @@ basket_pos = [[x + shift_pos[0], TILE_SIZE * 11 + shift_pos[1]]
               for x in np.arange(0, 3 * MAX_BASKET_TILES * TILE_SIZE, TILE_SIZE * 6)]
 
 # автоматический размер окна
-game_width = basket_pos[2][0] + (basket_pos[1][0] - basket_pos[0][0])
-game_height = TILE_SIZE * (BOARD_SIZE + MAX_BASKET_TILES + 2) + shift_pos[1]
+game_width = basket_pos[2][0] + (basket_pos[1][0] - basket_pos[0][0]) - shift_pos[0]
+game_height = TILE_SIZE * (BOARD_SIZE + MAX_BASKET_TILES + 2) + shift_pos[1] - shift_pos[1]
 
 
 # gameover params
@@ -87,11 +87,11 @@ def remove_zeros(arr):
 def rotate(figure):
     # помещаем фигуру в квадрат side_size x side_size
     side_size = max(figure.shape)
-    zeros = np.zeros((side_size, side_size), dtype=np.bool)
+    zeros = np.zeros((side_size, side_size), dtype=bool)
     zeros[:figure.shape[0], :figure.shape[1]] = figure
     figure = zeros
     # создаём новый массив повёрнутый на 90 градусов
-    nf = np.empty(figure.shape, dtype=np.bool)
+    nf = np.empty(figure.shape, dtype=bool)
     for i in range(side_size):
         for j in range(side_size):
             nf[side_size - i - 1][j] = figure[j][i]
